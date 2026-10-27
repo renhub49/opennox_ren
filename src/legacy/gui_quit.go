@@ -19,9 +19,25 @@ import (
 )
 
 var (
-	Sub_446380 func()
-	Sub_445B40 func() int
+	Sub_446380     func()
+	Sub_445B40     func() int
+	ShowQuitDialog func()
 )
+
+//export nox_client_showQuitDialog
+func nox_client_showQuitDialog() { ShowQuitDialog() }
+
+func Get_nox_wnd_quitMenu_825760() *gui.Window {
+	return asWindow(C.nox_wnd_quitMenu_825760)
+}
+
+func Nox_xxx_quitDialogYes_445B20() {
+	C.nox_xxx_quitDialogYes_445B20()
+}
+
+func Nox_xxx_quitDialogNo_445B30() {
+	C.nox_xxx_quitDialogNo_445B30()
+}
 
 //export nox_xxx____setargv_4_44B000
 func nox_xxx____setargv_4_44B000() {

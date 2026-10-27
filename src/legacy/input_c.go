@@ -14,6 +14,9 @@ package legacy
 #include "input_common.h"
 #include "MixPatch.h"
 #include "client__gui__tooltip.h"
+#include "client__gui__guiinv.h"
+extern uint32_t array_5D4594_1049872[9];
+extern nox_inventory_cell_t nox_client_inventory_grid_1050020[NOX_INVENTORY_CELLS_MAX];
 #include "client__gui__gamewin__gamewin.h"
 
 void sub_45D870();
@@ -204,6 +207,56 @@ func Nox_xxx_wnd_46C2A0(a1 *gui.Window) int {
 }
 func Nox_xxx_clientAskInfoMb_4BF050(a1 *client.Drawable) string {
 	return GoWString(C.nox_xxx_clientAskInfoMb_4BF050((*nox_drawable)(a1.C())))
+}
+
+// TooltipItem returns the item which name is shown by the cursor tooltip.
+func TooltipItem() *client.Drawable {
+	return asDrawable(C.nox_xxx_tooltipItem)
+}
+
+// ItemInfoLines returns item info lines, as shown by the identify panel.
+func ItemInfoLines(dr *client.Drawable) []string {
+	n := int(C.nox_xxx_itemInfoCollect((*nox_drawable)(dr.C())))
+	out := make([]string, 0, n)
+	for i := 0; i < n; i++ {
+		out = append(out, GoWString(C.nox_xxx_itemInfoLine(C.int(i))))
+	}
+	return out
+}
+
+// IsInventoryItem checks if the item is in the player's inventory, not counting inventory tools (gold, identify, map).
+func IsInventoryItem(dr *client.Drawable) bool {
+	if dr == nil {
+		return false
+	}
+	p := (*nox_drawable)(dr.C())
+	for i := range C.nox_client_inventory_grid_1050020 {
+		// cells are stored by column, the last row of each column holds the tools column (see sub_466660)
+		if i%C.NOX_INVENTORY_ROW_COUNT == C.NOX_INVENTORY_ROW_COUNT-1 {
+			continue
+		}
+		cell := &C.nox_client_inventory_grid_1050020[i]
+		if cell.field_140 != 0 && cell.field_0 == p {
+			return true
+		}
+	}
+	for _, it := range EquippedItems() {
+		if it == dr {
+			return true
+		}
+	}
+	return false
+}
+
+// EquippedItems returns all items equipped by the player.
+func EquippedItems() []*client.Drawable {
+	var out []*client.Drawable
+	for _, p := range C.array_5D4594_1049872 {
+		for dr := AsDrawableP(unsafe.Pointer(uintptr(p))); dr != nil; dr = dr.NextPtr {
+			out = append(out, dr)
+		}
+	}
+	return out
 }
 func Nox_xxx_cursorSetTooltip_4776B0(a1 string) {
 	if a1 == "" {

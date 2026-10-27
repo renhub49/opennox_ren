@@ -558,7 +558,7 @@ func (s *Server) netSendAudioEvent(u *server.Object, ev *server.AudioEvent, perc
 	pl := u.ControllingPlayer()
 	packed := uint16(uint32(uint16(ev.Sound)) | uint32(perc)<<10)
 	dx := ev.Pos.X - pl.Pos3632().X
-	mv := uint8(int8(50 * int(dx) / (videoGetWindowSize().X / 2)))
+	mv := uint8(int8(50 * int(dx) / (videoGetWorldSize().X / 2)))
 	var buf [4]byte
 	if u == ev.Obj {
 		buf[0] = byte(netmsg.MSG_AUDIO_PLAYER_EVENT)

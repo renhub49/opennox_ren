@@ -325,12 +325,12 @@ func (s *Server) newPlayer(ind ntype.PlayerInd, opts *PlayerOpts) int {
 		pl.Field10 = uint16(opts.Screen.X / 2)
 		pl.Field12 = uint16(opts.Screen.Y / 2)
 	} else {
-		if nox_win_width >= opts.Screen.X {
+		if wsz := videoGetWorldSize(); wsz.X >= opts.Screen.X {
 			pl.Field10 = uint16(opts.Screen.X / 2)
 			pl.Field12 = uint16(opts.Screen.Y / 2)
 		} else {
-			pl.Field10 = uint16(nox_win_width / 2)
-			pl.Field12 = uint16(nox_win_height / 2)
+			pl.Field10 = uint16(wsz.X / 2)
+			pl.Field12 = uint16(wsz.Y / 2)
 		}
 	}
 	pl.SetSerial(opts.Serial)

@@ -3,13 +3,18 @@
 package opennox
 
 import (
+	"context"
 	"image"
 	"image/color"
 	"math"
 	"sort"
 
+	noxcolor "github.com/opennox/libs/color"
 	"github.com/opennox/libs/common"
+	"github.com/opennox/libs/console"
+	"github.com/opennox/libs/object"
 	"github.com/opennox/libs/wall"
+	"github.com/spf13/viper"
 
 	"github.com/opennox/opennox/v1/client"
 	"github.com/opennox/opennox/v1/client/noxrender"
@@ -18,6 +23,70 @@ import (
 	"github.com/opennox/opennox/v1/legacy"
 	"github.com/opennox/opennox/v1/server"
 )
+
+const (
+	configItemOutline = "game.extensions.item_outline"
+
+	itemPickupRange  = 75 // same as in nox_xxx_cursorUpdate_46B740_sprites
+	itemOutlineWidth = 1
+)
+
+var (
+	itemOutlineEnabled = true
+	// the outline is animated with dashes of both colors
+	itemOutlineColor  = noxcolor.RGB5551Color(230, 230, 230)
+	itemOutlineColor2 = noxcolor.RGB5551Color(40, 40, 40)
+)
+
+func init() {
+	configBoolPtr(configItemOutline, "", true, &itemOutlineEnabled)
+	noxConsole.Register(&console.Command{
+		Token: "itemoutline",
+		Help:  "itemoutline [on|off]: outline items that can be picked up",
+		Flags: console.ClientServer,
+		Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
+			if len(tokens) > 1 {
+				return false
+			} else if len(tokens) == 1 {
+				switch tokens[0] {
+				case "on", "1":
+					itemOutlineEnabled = true
+				case "off", "0":
+					itemOutlineEnabled = false
+				default:
+					return false
+				}
+				viper.Set(configItemOutline, itemOutlineEnabled)
+				writeConfigLater()
+			}
+			state := "off"
+			if itemOutlineEnabled {
+				state = "on"
+			}
+			c.Printf(console.ColorLightYellow, "itemoutline = %s", state)
+			return true
+		},
+	})
+}
+
+// itemInPickupRange checks if the drawable is an item that the player can pick up from where they stand.
+func (c *Client) itemInPickupRange(dr *client.Drawable) bool {
+	if !itemOutlineEnabled || dr.Class()&object.ClassPickup == 0 {
+		return false
+	}
+	d := c.Viewport().World.Max.Sub(dr.Pos())
+	return d.X*d.X+d.Y*d.Y < itemPickupRange*itemPickupRange
+}
+
+// callDrawFunc draws the object, outlining items that can be picked up.
+func (c *Client) callDrawFunc(dr *client.Drawable, vp *noxrender.Viewport) int {
+	if !c.itemInPickupRange(dr) {
+		return legacy.CallDrawFunc(dr, vp)
+	}
+	c.r.SetImageOutline(itemOutlineColor, itemOutlineColor2, itemOutlineWidth)
+	defer c.r.SetImageOutline(nil, nil, 0)
+	return legacy.CallDrawFunc(dr, vp)
+}
 
 func (c *Client) Nox_drawable_find(pt image.Point, r int) *client.Drawable {
 	xs := (pt.X - r) / client.Nox_drawable_2d_div
@@ -103,7 +172,7 @@ func (c *Client) nox_xxx_client_435F80_draw() bool {
 	if c.inDraw1 {
 		c.inDraw1 = false
 	}
-	legacy.Nox_xxx_clientEnumHover_476FA0()
+	withWorldScreen(legacy.Nox_xxx_clientEnumHover_476FA0)
 	if !c.clientSendInput(server.HostPlayerIndex) {
 		return true
 	}
@@ -158,6 +227,41 @@ func (c *Client) nox_xxx_clientDrawAll_436100_draw() {
 		return
 	}
 	noxflags.UnsetEngine(noxflags.EnginePause)
+	c.guiOverlays = c.guiOverlays[:0]
+	withWorldScreen(func() {
+		c.nox_xxx_clientDrawAll_436100_draw_world(v0)
+	})
+}
+
+// drawOverlay draws HUD elements that are not windows. With GUI scale, they are drawn later on the GUI layer.
+func (c *Client) drawOverlay(fnc func()) {
+	if noxScreen.gui <= 1 {
+		fnc()
+		return
+	}
+	c.guiOverlays = append(c.guiOverlays, fnc)
+}
+
+func (c *Client) drawGUIOverlays() {
+	if len(c.guiOverlays) == 0 {
+		return
+	}
+	// overlays are positioned relative to the viewport on the screen,
+	// so convert it to the GUI screen space while they are drawn
+	vp := c.Viewport()
+	screen, size := vp.Screen, vp.Size
+	one := image.Point{X: 1, Y: 1}
+	vp.Screen = scaleRect(image.Rectangle{Min: screen.Min, Max: screen.Max.Add(one)}, videoGetWorldSize(), videoGetWindowSize())
+	vp.Screen.Max = vp.Screen.Max.Sub(one)
+	vp.Size = vp.Screen.Size().Add(one)
+	for _, fnc := range c.guiOverlays {
+		fnc()
+	}
+	c.guiOverlays = c.guiOverlays[:0]
+	vp.Screen, vp.Size = screen, size
+}
+
+func (c *Client) nox_xxx_clientDrawAll_436100_draw_world(v0 uint64) {
 	*memmap.PtrUint64(0x5D4594, 814532) = v0
 	*memmap.PtrUint32(0x5D4594, 811916) = c.srv.Frame()
 	vp := c.Viewport()
@@ -185,11 +289,15 @@ func (c *Client) nox_xxx_clientDrawAll_436100_draw() {
 		legacy.Nox_xxx_clientDrawAll_436100_draw_A()
 	} else if c.ClientPlayerUnit() != nil && nox_client_isConnected() {
 		c.nox_xxx_drawAllMB_475810_draw(vp)
-		legacy.Nox_xxx_drawMinimapAndLines_4738E0()
+		c.drawOverlay(func() {
+			legacy.Nox_xxx_drawMinimapAndLines_4738E0()
+		})
 	} else {
 		c.r.ClearScreen(color.Black)
 	}
-	c.DrawPerfmon(noxPerfmon)
+	c.drawOverlay(func() {
+		c.DrawPerfmon(noxPerfmon)
+	})
 	if legacy.Get_dword_5d4594_811904() != 0 {
 		legacy.Sub_436F50()
 	}
@@ -200,7 +308,7 @@ func (c *Client) nox_xxx_clientDrawAll_436100_draw() {
 		}
 	}
 	if noxflags.HasGame(noxflags.GameFlag4) {
-		legacy.Nox_xxx_clientDrawAll_436100_draw_B()
+		c.drawOverlay(legacy.Nox_xxx_clientDrawAll_436100_draw_B)
 	}
 	if memmap.Uint32(0x587000, 85744) != 0 {
 		legacy.Sub_430B50(0, 0, nox_win_width-1, nox_win_height-1)
@@ -409,7 +517,7 @@ func (c *Client) sub_475F10(vp *noxrender.Viewport) {
 			continue
 		}
 		dr.Field_121 = 1
-		legacy.CallDrawFunc(dr, vp)
+		c.callDrawFunc(dr, vp)
 		if dr.Flags70()&0x40 != 0 {
 			legacy.Nox_xxx_drawShinySpot_4C4F40(vp, dr)
 		}
@@ -432,7 +540,7 @@ func (c *Client) sub_475FE0(vp *noxrender.Viewport) {
 			continue
 		}
 		dr.Field_121 = 1
-		legacy.CallDrawFunc(dr, vp)
+		c.callDrawFunc(dr, vp)
 		if noxflags.HasEngine(noxflags.EngineShowExtents) {
 			nox_thing_debug_draw(vp, dr)
 		}
@@ -523,7 +631,7 @@ LOOP:
 			}
 		}
 		c.drawCreatureBackEffects(vp, dr)
-		if legacy.CallDrawFunc(dr, vp) == 0 {
+		if c.callDrawFunc(dr, vp) == 0 {
 			continue
 		}
 		if noxflags.HasEngine(noxflags.EngineShowExtents) {

@@ -11,7 +11,7 @@
 #include "operators.h"
 
 //----- (004BF050) --------------------------------------------------------
-wchar2_t* nox_xxx_clientAskInfoMb_4BF050(nox_drawable* a1p) {
+static wchar2_t* nox_xxx_clientAskInfoMb_4BF050_impl(nox_drawable* a1p) {
 	wchar2_t* a1 = a1p;
 	int* v1;            // esi
 	int v2;             // eax
@@ -311,4 +311,26 @@ wchar2_t* nox_xxx_clientAskInfoMb_4BF050(nox_drawable* a1p) {
 		result = (wchar2_t*)getMemAt(0x5D4594, 1317000);
 	}
 	return result;
+}
+
+// OpenNox: remember the item which name was looked up last,
+// so the cursor tooltip knows which item it shows.
+static nox_drawable* nox_xxx_tooltipItem_last = 0;
+static wchar2_t* nox_xxx_tooltipItemName_last = 0;
+nox_drawable* nox_xxx_tooltipItem = 0;
+
+wchar2_t* nox_xxx_clientAskInfoMb_4BF050(nox_drawable* a1) {
+	wchar2_t* name = nox_xxx_clientAskInfoMb_4BF050_impl(a1);
+	nox_xxx_tooltipItem_last = a1;
+	nox_xxx_tooltipItemName_last = name;
+	return name;
+}
+
+// OpenNox: updates the item of the cursor tooltip, which is only known if the tooltip is the item name.
+void nox_xxx_tooltipItemSet(wchar2_t* tooltip) {
+	if (tooltip && tooltip == nox_xxx_tooltipItemName_last) {
+		nox_xxx_tooltipItem = nox_xxx_tooltipItem_last;
+	} else {
+		nox_xxx_tooltipItem = 0;
+	}
 }

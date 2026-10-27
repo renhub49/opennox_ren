@@ -1,6 +1,7 @@
 package opennox
 
 import (
+	"image"
 	"unsafe"
 
 	"github.com/opennox/libs/common"
@@ -41,6 +42,60 @@ func nox_xxx_wndLoadQuitMenu_445790() int {
 	str := strMan.GetStringInFile("Vote", "guiquit.c")
 	alloc.StrCopyZero(memmap.PtrT[[256]byte](0x5D4594, 825772)[:], str)
 	return 1
+}
+
+// showQuitDialog shows a dialog for leaving the game: to the main menu, to the desktop, or cancel.
+func showQuitDialog() {
+	const file = "C:\\NoxPost\\src\\client\\Gui\\guiquit.c"
+	title := strMan.GetStringInFile("GUIQuit.c:ReallyQuitTitle", file)
+	text := strMan.GetStringInFile("GUIQuit.c:ReallyQuitMessage", file)
+	flags := gui.DialogYesButton | gui.DialogNoButton | gui.DialogCancelButton | gui.DialogFlag6
+	NewDialogWindow(legacy.Get_nox_wnd_quitMenu_825760(), title, text, flags,
+		legacy.Nox_xxx_quitDialogYes_445B20, legacy.Nox_xxx_quitDialogNo_445B30)
+	dia := nox_gui_curDialog_830224
+	if dia == nil {
+		return
+	}
+	dialogNoFunc = mainloopExitToDesktop
+	dialogEscCancels = true
+
+	// the dialog is made wider for larger buttons, and taller for the cancel button below them
+	const (
+		width   = 180
+		height  = 160
+		pad     = 10
+		btnW    = 75
+		btnY    = 100
+		cancelW = 55
+	)
+	setRect := func(win *gui.Window, x, y, w, h int) {
+		win.SizeVal = image.Pt(w, h)
+		win.SetPos(image.Pt(x, y))
+	}
+	setImages := func(win *gui.Window, name string) {
+		d := win.DrawData()
+		d.SetBackgroundImage(nox_xxx_gLoadImg(name))
+		d.SetHighlightImage(nox_xxx_gLoadImg(name + "Lit"))
+		d.SetSelectedImage(nox_xxx_gLoadImg(name + "Lit"))
+	}
+	vsz := videoGetWindowSize()
+	setRect(dia, (vsz.X-width)/2, (vsz.Y-height)/2, width, height)
+	for _, id := range []uint{guiDialogTitleID, guiDialogTextID} {
+		w := dia.ChildByID(id)
+		off := w.Offs()
+		setRect(w, off.X, off.Y, width-2*off.X, w.Size().Y)
+	}
+	menu := dia.ChildByID(guiDialogYesID)
+	setRect(menu, pad, btnY, btnW, 20)
+	setImages(menu, "UIButtonLg")
+	menu.DrawData().SetText("Main Menu")
+	desktop := dia.ChildByID(guiDialogNoID)
+	setRect(desktop, width-pad-btnW, btnY, btnW, 20)
+	setImages(desktop, "UIButtonLg")
+	desktop.DrawData().SetText("To Desktop")
+	cancel := dia.ChildByID(guiDialogCancelID)
+	setRect(cancel, (width-cancelW)/2, btnY+20+6, cancelW, 20)
+	dia.Focus()
 }
 
 func sub_467440(a1 int) {

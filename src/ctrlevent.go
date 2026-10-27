@@ -114,7 +114,7 @@ func (c *CtrlEventHandler) nox_xxx_clientControl_42D6B0_orientation(mpos image.P
 	if v15 := legacy.Nox_xxx_spriteGetMB_476F80(); v15 != nil {
 		y = sub_4739D0(v15.Pos().Y)
 	}
-	wsz := videoGetWindowSize()
+	wsz := videoGetWorldSize()
 	cx := x - wsz.X/2
 	cy := y - wsz.Y/2
 	rad := math.Atan2(float64(cy), float64(cx))

@@ -4,7 +4,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"image"
+	"image/color"
 	"unsafe"
+
+	noxcolor "github.com/opennox/libs/color"
 )
 
 type drawOp16Func func(dst []uint16, src []byte, val int) (outDst []uint16, outSrc []byte)
@@ -39,12 +42,105 @@ func NewRawImage16(typ int, data []byte) Image16 {
 	return &rawImage{typ: typ, data: data}
 }
 
+const (
+	outlineAntsDash  = 3 // length of each dash of the animated outline
+	outlineAntsSpeed = 2 // frames per one pixel of dash movement
+)
+
+// SetImageOutline enables drawing an outline of a given width around images drawn after this call.
+// If cl2 is not nil, the outline is animated with dashes of both colors ("marching ants").
+// Width of zero disables it.
+func (r *NoxRender) SetImageOutline(cl, cl2 color.Color, width int) {
+	r.outline.width = width
+	if width <= 0 {
+		return
+	}
+	r.outline.cl = noxcolor.ToRGBA5551Color(cl)
+	r.outline.ants = cl2 != nil
+	if cl2 != nil {
+		r.outline.cl2 = noxcolor.ToRGBA5551Color(cl2)
+	}
+}
+
+// drawImageOutline draws a solid color silhouette of the image shifted in all directions.
+// The image drawn on top of it then looks outlined.
+func (r *NoxRender) drawImageOutline(img Image16, pos image.Point) {
+	switch img.Type() & 0x3F {
+	case 3, 4, 5, 6:
+	default:
+		return // other image types have no transparency, so no shape to outline
+	}
+	colors := [2]noxcolor.RGBA5551{r.outline.cl, r.outline.cl}
+	if r.outline.ants {
+		colors[1] = r.outline.cl2
+	}
+	split := [2]Color16{SplitColor(colors[0]), SplitColor(colors[1])}
+	pix := r.PixBuffer()
+	shift := int(r.Frame()) / outlineAntsSpeed
+	// colorAt returns the color index for the start of a pixel run, and a function to advance it.
+	// Dashes are diagonal stripes moving over time, which looks like dashes running along the outline.
+	colorAt := func(dst []uint16) (ind func(i int) int) {
+		off := int((uintptr(unsafe.Pointer(&dst[0])) - uintptr(unsafe.Pointer(&pix.Pix[0]))) / 2)
+		x, y := off%pix.Stride, off/pix.Stride
+		return func(i int) int {
+			return ((x + i + y + shift) / outlineAntsDash) & 1
+		}
+	}
+	fill := func(dst []uint16, n int) {
+		if n <= 0 {
+			return
+		}
+		ind := colorAt(dst)
+		for i := range dst[:n] {
+			dst[i] = uint16(colors[ind(i)])
+		}
+	}
+	var ops drawOps
+	ops.draw27 = func(dst []uint16, src []byte, n int) (_ []uint16, _ []byte) {
+		fill(dst, n)
+		return dst[n:], src[2*n:]
+	}
+	ops.draw4 = func(dst []uint16, src []byte, _ byte, n int) (_ []uint16, _ []byte) {
+		fill(dst, n)
+		return dst[n:], src[n:]
+	}
+	ops.draw5 = func(dst []uint16, src []byte, n int) (_ []uint16, _ []byte) {
+		if n <= 0 {
+			return dst, src
+		}
+		ind := colorAt(dst)
+		for i := range dst[:n] {
+			_, a := SplitColor4444(binary.LittleEndian.Uint16(src[2*i:]))
+			dst[i] = SplitColor16(dst[i]).OverAlpha(a, split[ind(i)]).Make16()
+		}
+		return dst[n:], src[2*n:]
+	}
+	ops.draw6 = func(dst []uint16, src []byte, val int) (_ []uint16, _ []byte) { return dst, src }
+
+	// extra draws must not affect the state used by the image itself
+	hook := r.HookImageDrawXxx
+	interlacingY, lastY := r.interlacingY, r.dword_5d4594_3799476
+	r.HookImageDrawXxx = nil
+	w := r.outline.width
+	for _, d := range [...]image.Point{
+		{X: -w}, {X: w}, {Y: -w}, {Y: w},
+		{X: -w, Y: -w}, {X: w, Y: -w}, {X: -w, Y: w}, {X: w, Y: w},
+	} {
+		r.nox_client_drawImg_aaa_4C79F0(&ops, img, pos.Add(d))
+	}
+	r.HookImageDrawXxx = hook
+	r.interlacingY, r.dword_5d4594_3799476 = interlacingY, lastY
+}
+
 func (r *NoxRender) DrawImage16(img Image16, pos image.Point) {
 	if img == nil {
 		return
 	}
 	if p, ok := img.(*Image); ok && p == nil {
 		return
+	}
+	if r.outline.width > 0 {
+		r.drawImageOutline(img, pos)
 	}
 	switch img.Type() & 0x3F {
 	case 2, 7:

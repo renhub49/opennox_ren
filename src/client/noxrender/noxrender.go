@@ -371,6 +371,13 @@ type NoxRender struct {
 	interlacingY         int
 	interlacing          bool
 
+	outline struct {
+		cl    noxcolor.RGBA5551
+		cl2   noxcolor.RGBA5551
+		ants  bool
+		width int
+	}
+
 	HookImageDrawXxx func(pos image.Point, sz image.Point)
 }
 

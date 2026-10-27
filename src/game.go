@@ -549,7 +549,8 @@ func initGameSession435CC0() error {
 	}
 
 	c.nox_xxx_initSight_485F80()
-	c.Sight.Init(nox_win_width, nox_win_height)
+	wsz := videoGetWorldSize()
+	c.Sight.Init(wsz.X, wsz.Y)
 
 	c.InitDrawableLists()
 
@@ -573,7 +574,7 @@ func initGameSession435CC0() error {
 	c.SetDrawFunc(c.clientDraw)
 	gameSetPlayState(3)
 	c.Objs.LoadError = false
-	sz := videoGetWindowSize()
+	sz := videoGetWorldSize()
 	vp := c.Viewport()
 	vp.Screen = image.Rect(0, 0, sz.X-1, sz.Y-1)
 	vp.Size = sz

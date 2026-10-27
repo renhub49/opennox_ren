@@ -131,8 +131,8 @@ func (c *Client) mapDownloadLoop(first bool) (bool, error) {
 		return true, nil
 	}
 
-	c.GUI.Draw()
-	c.nox_client_drawCursorAndTooltips_477830()
+	c.drawGUI(c.GUI.Draw)
+	c.drawCursor(c.nox_client_drawCursorAndTooltips_477830)
 	c.copyPixBuffer()
 
 	if !c.mapsend.Downloading() {
@@ -147,12 +147,15 @@ func (c *Client) mapDownloadLoop(first bool) (bool, error) {
 
 func (c *Client) mainloopDrawAndPresent() {
 	sub_437180()
-	if legacy.Get_nox_client_gui_flag_1556112() == 0 {
-		c.GUI.Draw() // Draw game windows
-	}
-	c.DrawSparks()
+	c.drawGUI(func() {
+		c.drawGUIOverlays()
+		if legacy.Get_nox_client_gui_flag_1556112() == 0 {
+			c.GUI.Draw() // Draw game windows
+		}
+	})
+	withWorldScreen(c.DrawSparks)
 	if !noxflags.HasEngine(noxflags.EngineNoRendering) || noxflags.HasEngine(noxflags.EngineFlag9) || nox_client_gui_flag_815132 != 0 {
-		c.nox_client_drawCursorAndTooltips_477830() // Draw cursor
+		c.drawCursor(c.nox_client_drawCursorAndTooltips_477830) // Draw cursor
 	}
 	c.r.DrawFade(true)
 	c.maybeScreenshot()

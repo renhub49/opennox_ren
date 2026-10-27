@@ -602,7 +602,7 @@ func (c *Client) nox_video_cursorDrawImpl_477A30(pos image.Point) {
 		c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.Use, pos)
 		c.pos1097204.Y = -2 * fh
 	case gui.CursorMoveArrow:
-		mpos := c.Inp.GetMousePos()
+		mpos := c.GetMousePos()
 		v19 := types.Pointf{
 			X: float32(mpos.X - nox_win_width/2),
 			Y: float32(mpos.Y - nox_win_height/2),
@@ -674,7 +674,7 @@ func (c *Client) nox_client_drawCursorAndTooltips_477830() {
 	if noxCursors.Select == nil {
 		nox_xxx_cursorLoadAll_477710()
 	}
-	mpos := c.Inp.GetMousePos()
+	mpos := c.GetMousePos()
 	vp, freeVp := alloc.New(noxrender.Viewport{})
 	defer freeVp()
 	vp.Screen = image.Rect(0, 0, nox_win_width, nox_win_height)
@@ -702,6 +702,10 @@ func (c *Client) nox_client_drawCursorAndTooltips_477830() {
 	}
 	c.nox_video_cursorDrawImpl_477A30(mpos)
 	if str := alloc.GoString16((*uint16)(memmap.PtrOff(0x5D4594, 1096676))); str != "" && nox_client_showTooltips_80840 {
+		if dr := c.tooltipItem(); dr != nil {
+			c.drawItemTooltip(mpos, str, dr)
+			return
+		}
 		sz := c.r.GetStringSizeWrapped(nil, str, 0)
 		px := mpos.X - c.pos1097204.X
 		py := mpos.Y - c.pos1097204.Y

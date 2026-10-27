@@ -577,6 +577,7 @@ int nox_xxx_guiCursor_477600() { return *getMemU32Ptr(0x5D4594, 1096672); }
 
 //----- (004776B0) --------------------------------------------------------
 void nox_xxx_cursorSetTooltip_4776B0(wchar2_t* a1) {
+	nox_xxx_tooltipItemSet(a1);
 	if (a1) {
 		if ((int)nox_wcslen(a1) >= 256) {
 			nox_wcsncpy((wchar2_t*)getMemAt(0x5D4594, 1096676), a1, 0xFFu);

@@ -79,6 +79,11 @@ type Client struct {
 	CursorPrev gui.Cursor
 	state      gui.State
 
+	// mouseWorld is the size of the input canvas, mouseScreen is the size of the
+	// screen space used by GetMousePos and other mouse functions of the client.
+	mouseWorld  image.Point
+	mouseScreen image.Point
+
 	Conn *netstr.Client
 
 	DrawableQueue []*Drawable
@@ -233,23 +238,84 @@ func (c *Client) SetSensitivity(v float32) {
 	c.Inp.SetSensitivity(v)
 }
 
+// SetMouseScreen sets the size of the screen space for mouse functions of the client,
+// relative to the size of the input canvas (world render).
+func (c *Client) SetMouseScreen(world, screen image.Point) {
+	c.mouseWorld = world
+	c.mouseScreen = screen
+}
+
+func (c *Client) mouseScaled() bool {
+	return c.mouseScreen != c.mouseWorld &&
+		c.mouseWorld.X > 0 && c.mouseWorld.Y > 0 &&
+		c.mouseScreen.X > 0 && c.mouseScreen.Y > 0
+}
+
+func (c *Client) toMouseScreen(p image.Point) image.Point {
+	if !c.mouseScaled() {
+		return p
+	}
+	return image.Point{
+		X: p.X * c.mouseScreen.X / c.mouseWorld.X,
+		Y: p.Y * c.mouseScreen.Y / c.mouseWorld.Y,
+	}
+}
+
+func (c *Client) fromMouseScreen(p image.Point) image.Point {
+	if !c.mouseScaled() {
+		return p
+	}
+	// round up, so that toMouseScreen(fromMouseScreen(p)) == p
+	return image.Point{
+		X: (p.X*c.mouseWorld.X + c.mouseScreen.X - 1) / c.mouseScreen.X,
+		Y: (p.Y*c.mouseWorld.Y + c.mouseScreen.Y - 1) / c.mouseScreen.Y,
+	}
+}
+
+// GetMousePos returns current mouse position in the screen space.
 func (c *Client) GetMousePos() image.Point {
 	if c == nil || c.Inp == nil {
 		return image.Point{}
 	}
-	return c.Inp.GetMousePos()
+	return c.toMouseScreen(c.Inp.GetMousePos())
+}
+
+// GetMouseRel returns relative mouse movement in the screen space.
+func (c *Client) GetMouseRel() image.Point {
+	if c == nil || c.Inp == nil {
+		return image.Point{}
+	}
+	if !c.mouseScaled() {
+		return c.Inp.GetMouseRel()
+	}
+	cur := c.Inp.GetMousePos()
+	prev := cur.Sub(c.Inp.GetMouseRel())
+	return c.toMouseScreen(cur).Sub(c.toMouseScreen(prev))
 }
 
 func (c *Client) ChangeMousePos(pos image.Point, abs bool) {
 	if c == nil || c.Inp == nil {
 		return
 	}
-	c.Inp.ChangeMousePos(pos, abs)
+	if !c.mouseScaled() {
+		c.Inp.ChangeMousePos(pos, abs)
+		return
+	}
+	if !abs {
+		pos = pos.Add(c.GetMousePos())
+	}
+	c.Inp.ChangeMousePos(c.fromMouseScreen(pos), true)
 }
 
 func (c *Client) SetMouseBounds(rect image.Rectangle) {
 	if c == nil || c.Inp == nil {
 		return
+	}
+	if c.mouseScaled() {
+		// bounds are inclusive
+		one := image.Point{X: 1, Y: 1}
+		rect.Min = c.fromMouseScreen(rect.Min)
+		rect.Max = c.fromMouseScreen(rect.Max.Add(one)).Sub(one)
 	}
 	c.Inp.SetMouseBounds(rect)
 }

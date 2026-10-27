@@ -352,6 +352,366 @@ int sub_462740() {
 }
 
 //----- (004627F0) --------------------------------------------------------
+// OpenNox: generates item info lines shown by the identify panel (moved out of sub_4627F0),
+// so the same lines can be used for the item tooltip.
+void nox_xxx_itemInfoLines_4627F0(int item, void (*add)(void* ctx, wchar2_t* line), void* ctx) {
+	int v2;           // ebx
+	int v3;           // eax
+	int result;       // eax
+	wchar2_t* v5;      // eax
+	uint32_t* v6;     // eax
+	wchar2_t* v7;      // eax
+	wchar2_t* v8;      // eax
+	uint32_t* v9;     // eax
+	uint32_t* v10;    // esi
+	wchar2_t* v11;     // eax
+	wchar2_t* v12;     // eax
+	wchar2_t* v13;     // eax
+	wchar2_t* v14;     // eax
+	int v15;          // eax
+	int v16;          // ecx
+	float* v17;       // eax
+	double v18;       // st7
+	int v19;          // ecx
+	int v20;          // eax
+	wchar2_t* v21;     // eax
+	wchar2_t* v22;     // eax
+	int v23;          // ecx
+	int v24;          // eax
+	int v25;          // ecx
+	uint32_t* v26;    // edi
+	int v27;          // eax
+	double v28;       // st7
+	int v29;          // eax
+	double v30;       // st7
+	double v31;       // st7
+	double v32;       // st7
+	int v33;          // eax
+	wchar2_t* v34;     // eax
+	wchar2_t* v35;     // eax
+	wchar2_t* v36;     // eax
+	wchar2_t* v37;     // eax
+	wchar2_t* v38;     // eax
+	int v39;          // ecx
+	uint32_t* v40;    // eax
+	wchar2_t* v41;     // eax
+	wchar2_t* v42;     // eax
+	int v43;          // edi
+	int v44;          // ecx
+	wchar2_t* v45;     // eax
+	int v46;          // ebx
+	int v47;          // ecx
+	wchar2_t* v48;     // eax
+	int v49;          // eax
+	uint32_t* v50;    // eax
+	wchar2_t* v51;     // [esp-Ch] [ebp-444h]
+	wchar2_t* v52;     // [esp-Ch] [ebp-444h]
+	wchar2_t* v53;     // [esp-Ch] [ebp-444h]
+	wchar2_t* v54;     // [esp-4h] [ebp-43Ch]
+	wchar2_t* v55;     // [esp-4h] [ebp-43Ch]
+	int v56;          // [esp+0h] [ebp-438h]
+	double v57;       // [esp+0h] [ebp-438h]
+	double v58;       // [esp+0h] [ebp-438h]
+	double v59;       // [esp+0h] [ebp-438h]
+	double v60;       // [esp+0h] [ebp-438h]
+	double v61;       // [esp+0h] [ebp-438h]
+	double v62;       // [esp+0h] [ebp-438h]
+	int v63;          // [esp+4h] [ebp-434h]
+	int v64;          // [esp+4h] [ebp-434h]
+	float v65;        // [esp+4h] [ebp-434h]
+	int v66;          // [esp+4h] [ebp-434h]
+	int v67;          // [esp+4h] [ebp-434h]
+	float v68;        // [esp+18h] [ebp-420h]
+	float v69;        // [esp+1Ch] [ebp-41Ch]
+	float v70;        // [esp+20h] [ebp-418h]
+	float v71;        // [esp+24h] [ebp-414h]
+	float v72;        // [esp+28h] [ebp-410h]
+	int v73;          // [esp+2Ch] [ebp-40Ch]
+	int2 v74;         // [esp+30h] [ebp-408h]
+	wchar2_t v75[256]; // [esp+38h] [ebp-400h]
+	wchar2_t v76[256]; // [esp+238h] [ebp-200h]
+
+	v2 = 0;
+	v73 = 1;
+	if (nox_common_gameFlags_check_40A5C0(2048)) {
+		if (*(uint16_t*)(item + 294)) {
+			sub_4633B0(*(int*)&item, &v71, &v68);
+			v63 = (int)v68;
+			v56 = (int)v71;
+			v11 =
+				nox_strman_loadString_40F1D0("IdentifyDurability", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2575);
+			nox_swprintf(v75, v11, v56, v63);
+		} else {
+			v12 = nox_strman_loadString_40F1D0("IdentifyDurabilityIndestructable", 0,
+											   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2583);
+			nox_wcsncpy(v75, v12, sizeof(v75)/2);
+		}
+	} else {
+		switch (sub_57B190(*(uint16_t*)(item + 292), *(uint16_t*)(item + 294))) {
+		case 0:
+			v13 = nox_strman_loadString_40F1D0("IdentifyDurabilityNoDamage", 0,
+											   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2595);
+			nox_swprintf(v75, v13);
+			break;
+		case 1:
+			v52 = nox_strman_loadString_40F1D0("IdentifyDurabilitySlight", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c",
+											   2599);
+			nox_swprintf(v75, v52);
+			break;
+		case 2:
+			v53 = nox_strman_loadString_40F1D0("IdentifyDurabilityModerate", 0,
+											   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2603);
+			nox_swprintf(v75, v53);
+			break;
+		case 3:
+			v13 = nox_strman_loadString_40F1D0("IdentifyDurabilitySevere", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c",
+											   2607);
+			nox_swprintf(v75, v13);
+			break;
+		case 4:
+			v51 = nox_strman_loadString_40F1D0("IdentifyDurabilityIndestructable", 0,
+											   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2591);
+			nox_swprintf(v75, v51);
+			break;
+		default:
+			break;
+		}
+	}
+	add(ctx, (wchar2_t*)(v75));
+	add(ctx, (wchar2_t*)(getMemAt(0x5D4594, 1063656)));
+	v64 = *(unsigned char*)(item + 298);
+	v14 = nox_strman_loadString_40F1D0("IdentifyWeight", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2620);
+	nox_swprintf(v75, v14, v64);
+	add(ctx, (wchar2_t*)(v75));
+	add(ctx, (wchar2_t*)(getMemAt(0x5D4594, 1063660)));
+	v15 = item;
+	v16 = *(uint32_t*)(item + 112);
+	if (!(v16 & 0x2000000)) {
+		if (!(v16 & 0x1001000)) {
+			goto LABEL_72;
+		}
+		v23 = dword_8531A0_2576;
+		LODWORD(v68) = item + 432;
+		v69 = 1.0;
+		v70 = *(float*)(&dword_8531A0_2576);
+		if (!*getMemU32Ptr(0x5D4594, 1063644)) {
+			*getMemU32Ptr(0x5D4594, 1063644) = nox_xxx_getTTByNameSpriteMB_44CFC0("ArcherArrow");
+			v24 = nox_xxx_getTTByNameSpriteMB_44CFC0("ArcherBolt");
+			v23 = dword_8531A0_2576;
+			*getMemU32Ptr(0x5D4594, 1063648) = v24;
+			v15 = item;
+		}
+		if (!v23 || !(*(uint8_t*)(v15 + 116) & 2)) {
+			goto LABEL_50;
+		}
+		v25 = *(uint32_t*)(v23 + 4);
+		if (v25 & 4) {
+			v26 = nox_xxx_getProjectileClassById_413250(*getMemIntPtr(0x5D4594, 1063644));
+			v2 = 4;
+		} else {
+			if (!(v25 & 8)) {
+				goto LABEL_50;
+			}
+			v26 = nox_xxx_getProjectileClassById_413250(*getMemIntPtr(0x5D4594, 1063648));
+			v2 = 8;
+		}
+		if (v26) {
+			goto LABEL_51;
+		}
+		v15 = item;
+	LABEL_50:
+		v26 = nox_xxx_getProjectileClassById_413250(*(uint32_t*)(v15 + 108));
+	LABEL_51:
+		v71 = sub_4626C0(*(int*)&item);
+		v72 = sub_462700(*(int*)&item);
+		v27 = *(uint32_t*)LODWORD(v68);
+		if (*(uint32_t*)LODWORD(v68) &&
+			*(float* (**)(int, int, int, int, float*))(v27 + 40) == nox_xxx_effectDamageMultiplier_4E04C0) {
+			v69 = *(float*)(v27 + 44);
+		}
+		v28 = nox_xxx_calcBoltDamage_4EF1E0(*(uint32_t*)(LODWORD(v70) + 2239), (int)v26);
+		v29 = v26[1];
+		v70 = v28 * v69 + v71 + v72;
+		if (v29 == *getMemU32Ptr(0x5D4594, 1063648) && nox_common_gameFlags_check_40A5C0(2048)) {
+			v30 = nox_xxx_gamedataGetFloat_419D40((void*)getMemAt(0x587000, 137632));
+		} else {
+			LODWORD(v68) = *((unsigned short*)v26 + 36);
+			v30 = (double)SLODWORD(v68);
+		}
+		v68 = v30 * v69;
+		v31 = v70 - v68 - v72 - v71;
+		v69 = v31;
+		if (v31 < 0.0) {
+			v32 = v70 - v69;
+			v69 = 0.0;
+			v70 = v32;
+		}
+		v33 = *(uint32_t*)(item + 116);
+		if (v33 & 0xC) {
+			v34 =
+				nox_strman_loadString_40F1D0("WeaponDamageLabelNA", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2770);
+			nox_swprintf(v75, v34);
+		} else if (!(v33 & 2) || v2) {
+			v58 = v70;
+			v55 = nox_strman_loadString_40F1D0("WeaponDamageLabel", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2776);
+			nox_swprintf(v75, v55, v58);
+		} else {
+			v57 = v70;
+			v54 = nox_strman_loadString_40F1D0("WeaponDamageLabelUnknownPlus", 0,
+											   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2773);
+			nox_swprintf(v75, v54, v57);
+		}
+		add(ctx, (wchar2_t*)(v75));
+		nox_wcsncpy(v75, L"  ", sizeof(v75)/2);
+		v59 = v68;
+		v35 = nox_strman_loadString_40F1D0("BaseDamageLabel", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2785);
+		nox_swprintf(v76, v35, v59);
+		nox_wcscat(v75, v76);
+		add(ctx, (wchar2_t*)(v75));
+		nox_wcsncpy(v75, L"  ", sizeof(v75)/2);
+		v60 = v69;
+		v36 = nox_strman_loadString_40F1D0("StrengthDamageLabel", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2792);
+		nox_swprintf(v76, v36, v60);
+		nox_wcscat(v75, v76);
+		add(ctx, (wchar2_t*)(v75));
+		if (v72 > 0.0) {
+			nox_wcsncpy(v75, L"  ", sizeof(v75)/2);
+			v61 = v72;
+			v37 = nox_strman_loadString_40F1D0("FireDamageLabel", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2801);
+			nox_swprintf(v76, v37, v61);
+			nox_wcscat(v75, v76);
+			add(ctx, (wchar2_t*)(v75));
+		}
+		if (v71 > 0.0) {
+			nox_wcsncpy(v75, L"  ", sizeof(v75)/2);
+			v62 = v71;
+			v38 = nox_strman_loadString_40F1D0("ElectricalDamageLabel", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c",
+											   2811);
+			nox_swprintf(v76, v38, v62);
+			nox_wcscat(v75, v76);
+			add(ctx, (wchar2_t*)(v75));
+		}
+		add(ctx, (wchar2_t*)(getMemAt(0x5D4594, 1063668)));
+		goto LABEL_71;
+	}
+	v17 = (float*)nox_xxx_equipClothFindDefByTT_413270(*(uint32_t*)(item + 108));
+	v18 = 1.0;
+	v19 = *(uint32_t*)(item + 432);
+	if (v19 && *(float* (**)(int, int, int, int, int, float*))(v19 + 76) == sub_4E0370) {
+		v18 = *(float*)(v19 + 80);
+	}
+	v65 = v18 * v17[16] * 1000.0 + 0.5;
+	v20 = nox_float2int(v65);
+	if (*(uint8_t*)(item + 116) & 2) {
+		v21 = nox_strman_loadString_40F1D0("ArmorValueLabelNA", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2647);
+		nox_swprintf(v75, v21);
+	} else {
+		v66 = v20;
+		v22 = nox_strman_loadString_40F1D0("ArmorValueLabel", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2649);
+		nox_swprintf(v75, v22, v66);
+	}
+	add(ctx, (wchar2_t*)(v75));
+	add(ctx, (wchar2_t*)(getMemAt(0x5D4594, 1063664)));
+LABEL_71:
+	v15 = item;
+LABEL_72:
+	v39 = *(uint32_t*)(v15 + 112);
+	if (v39 & 0x13001000) {
+		if (v39 & 0x11001000) {
+			v40 = nox_xxx_getProjectileClassById_413250(*(uint32_t*)(v15 + 108));
+		} else {
+			v40 = nox_xxx_equipClothFindDefByTT_413270(*(uint32_t*)(v15 + 108));
+		}
+		if (v40) {
+			v15 = item;
+			v43 = item + 432;
+			if (*(uint32_t*)(item + 112) & 0x10000000) {
+				goto LABEL_91;
+			}
+			v44 = *(uint32_t*)(item + 440);
+			if (v44 && *(uint32_t*)(v44 + 16)) {
+				v45 = nox_strman_loadString_40F1D0("IdentifySpecialAttributes", 0,
+												   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2851);
+				nox_swprintf(v75, v45);
+				add(ctx, (wchar2_t*)(v75));
+				v46 = 0;
+				nox_wcsncpy(v75, L"  ", sizeof(v75)/2);
+				nox_swprintf(v76, *(const wchar2_t**)(*(uint32_t*)(v43 + 8) + 16));
+				nox_wcscat(v75, v76);
+				add(ctx, (wchar2_t*)(v75));
+				v15 = item;
+			} else {
+				v46 = v73;
+			}
+			v47 = *(uint32_t*)(v43 + 12);
+			if (v47 && *(uint32_t*)(v47 + 16)) {
+				if (v46 == 1) {
+					v48 = nox_strman_loadString_40F1D0("IdentifySpecialAttributes", 0,
+													   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2868);
+					nox_swprintf(v75, v48);
+					add(ctx, (wchar2_t*)(v75));
+					v73 = 0;
+					v46 = 0;
+				}
+				nox_wcsncpy(v75, L"  ", sizeof(v75)/2);
+				nox_swprintf(v76, *(const wchar2_t**)(*(uint32_t*)(v43 + 12) + 16));
+				nox_wcscat(v75, v76);
+				add(ctx, (wchar2_t*)(v75));
+				v15 = item;
+			}
+			if (v46) {
+				goto LABEL_91;
+			}
+			add(ctx, (wchar2_t*)(getMemAt(0x5D4594, 1063672)));
+		} else {
+			v41 = nox_strman_loadString_40F1D0("IdentifySpecialAttributes", 0,
+											   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2835);
+			nox_swprintf(v75, v41);
+			add(ctx, (wchar2_t*)(v75));
+			v42 = nox_strman_loadString_40F1D0("IdentifyUnknown", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2837);
+			nox_swprintf(v75, v42);
+			add(ctx, (wchar2_t*)(v75));
+		}
+		v15 = item;
+	}
+LABEL_91:
+	v49 = nox_get_thing_desc(*(uint32_t*)(v15 + 108));
+	if (v49) {
+		add(ctx, (wchar2_t*)(v49));
+	}
+}
+
+static void sub_4627F0_addLine(void* ctx, wchar2_t* line) {
+	nox_window_call_field_94((int)ctx, 16397, (int)line, -1);
+}
+
+// OpenNox: item info lines collected for the item tooltip.
+#define NOX_ITEM_INFO_MAX_LINES 24
+static wchar2_t nox_xxx_itemInfo_lines[NOX_ITEM_INFO_MAX_LINES][256];
+static int nox_xxx_itemInfo_cnt = 0;
+
+static void nox_xxx_itemInfo_addLine(void* ctx, wchar2_t* line) {
+	if (nox_xxx_itemInfo_cnt >= NOX_ITEM_INFO_MAX_LINES) {
+		return;
+	}
+	nox_wcsncpy(nox_xxx_itemInfo_lines[nox_xxx_itemInfo_cnt], line, 255);
+	nox_xxx_itemInfo_lines[nox_xxx_itemInfo_cnt][255] = 0;
+	nox_xxx_itemInfo_cnt++;
+}
+
+int nox_xxx_itemInfoCollect(nox_drawable* dr) {
+	nox_xxx_itemInfo_cnt = 0;
+	nox_xxx_itemInfoLines_4627F0((int)dr, nox_xxx_itemInfo_addLine, 0);
+	return nox_xxx_itemInfo_cnt;
+}
+
+wchar2_t* nox_xxx_itemInfoLine(int i) {
+	if (i < 0 || i >= nox_xxx_itemInfo_cnt) {
+		return 0;
+	}
+	return nox_xxx_itemInfo_lines[i];
+}
+
 int sub_4627F0(uint32_t* a1) {
 	int v2;           // ebx
 	int v3;           // eax
@@ -485,252 +845,7 @@ LABEL_14:
 	sub_46AEE0((int)v9, (int)getMemAt(0x5D4594, 1063124));
 	v10 = nox_xxx_wndGetChildByID_46B0C0(*(uint32_t**)&dword_5d4594_1062476, 9156);
 	nox_window_call_field_94((int)v10, 16399, 0, 0);
-	if (nox_common_gameFlags_check_40A5C0(2048)) {
-		if (*(uint16_t*)(dword_5d4594_1063116 + 294)) {
-			sub_4633B0(*(int*)&dword_5d4594_1063116, &v71, &v68);
-			v63 = (int)v68;
-			v56 = (int)v71;
-			v11 =
-				nox_strman_loadString_40F1D0("IdentifyDurability", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2575);
-			nox_swprintf(v75, v11, v56, v63);
-		} else {
-			v12 = nox_strman_loadString_40F1D0("IdentifyDurabilityIndestructable", 0,
-											   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2583);
-			nox_wcsncpy(v75, v12, sizeof(v75)/2);
-		}
-	} else {
-		switch (sub_57B190(*(uint16_t*)(dword_5d4594_1063116 + 292), *(uint16_t*)(dword_5d4594_1063116 + 294))) {
-		case 0:
-			v13 = nox_strman_loadString_40F1D0("IdentifyDurabilityNoDamage", 0,
-											   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2595);
-			nox_swprintf(v75, v13);
-			break;
-		case 1:
-			v52 = nox_strman_loadString_40F1D0("IdentifyDurabilitySlight", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c",
-											   2599);
-			nox_swprintf(v75, v52);
-			break;
-		case 2:
-			v53 = nox_strman_loadString_40F1D0("IdentifyDurabilityModerate", 0,
-											   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2603);
-			nox_swprintf(v75, v53);
-			break;
-		case 3:
-			v13 = nox_strman_loadString_40F1D0("IdentifyDurabilitySevere", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c",
-											   2607);
-			nox_swprintf(v75, v13);
-			break;
-		case 4:
-			v51 = nox_strman_loadString_40F1D0("IdentifyDurabilityIndestructable", 0,
-											   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2591);
-			nox_swprintf(v75, v51);
-			break;
-		default:
-			break;
-		}
-	}
-	nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-	nox_window_call_field_94((int)v10, 16397, (int)getMemAt(0x5D4594, 1063656), -1);
-	v64 = *(unsigned char*)(dword_5d4594_1063116 + 298);
-	v14 = nox_strman_loadString_40F1D0("IdentifyWeight", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2620);
-	nox_swprintf(v75, v14, v64);
-	nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-	nox_window_call_field_94((int)v10, 16397, (int)getMemAt(0x5D4594, 1063660), -1);
-	v15 = dword_5d4594_1063116;
-	v16 = *(uint32_t*)(dword_5d4594_1063116 + 112);
-	if (!(v16 & 0x2000000)) {
-		if (!(v16 & 0x1001000)) {
-			goto LABEL_72;
-		}
-		v23 = dword_8531A0_2576;
-		LODWORD(v68) = dword_5d4594_1063116 + 432;
-		v69 = 1.0;
-		v70 = *(float*)(&dword_8531A0_2576);
-		if (!*getMemU32Ptr(0x5D4594, 1063644)) {
-			*getMemU32Ptr(0x5D4594, 1063644) = nox_xxx_getTTByNameSpriteMB_44CFC0("ArcherArrow");
-			v24 = nox_xxx_getTTByNameSpriteMB_44CFC0("ArcherBolt");
-			v23 = dword_8531A0_2576;
-			*getMemU32Ptr(0x5D4594, 1063648) = v24;
-			v15 = dword_5d4594_1063116;
-		}
-		if (!v23 || !(*(uint8_t*)(v15 + 116) & 2)) {
-			goto LABEL_50;
-		}
-		v25 = *(uint32_t*)(v23 + 4);
-		if (v25 & 4) {
-			v26 = nox_xxx_getProjectileClassById_413250(*getMemIntPtr(0x5D4594, 1063644));
-			v2 = 4;
-		} else {
-			if (!(v25 & 8)) {
-				goto LABEL_50;
-			}
-			v26 = nox_xxx_getProjectileClassById_413250(*getMemIntPtr(0x5D4594, 1063648));
-			v2 = 8;
-		}
-		if (v26) {
-			goto LABEL_51;
-		}
-		v15 = dword_5d4594_1063116;
-	LABEL_50:
-		v26 = nox_xxx_getProjectileClassById_413250(*(uint32_t*)(v15 + 108));
-	LABEL_51:
-		v71 = sub_4626C0(*(int*)&dword_5d4594_1063116);
-		v72 = sub_462700(*(int*)&dword_5d4594_1063116);
-		v27 = *(uint32_t*)LODWORD(v68);
-		if (*(uint32_t*)LODWORD(v68) &&
-			*(float* (**)(int, int, int, int, float*))(v27 + 40) == nox_xxx_effectDamageMultiplier_4E04C0) {
-			v69 = *(float*)(v27 + 44);
-		}
-		v28 = nox_xxx_calcBoltDamage_4EF1E0(*(uint32_t*)(LODWORD(v70) + 2239), (int)v26);
-		v29 = v26[1];
-		v70 = v28 * v69 + v71 + v72;
-		if (v29 == *getMemU32Ptr(0x5D4594, 1063648) && nox_common_gameFlags_check_40A5C0(2048)) {
-			v30 = nox_xxx_gamedataGetFloat_419D40((void*)getMemAt(0x587000, 137632));
-		} else {
-			LODWORD(v68) = *((unsigned short*)v26 + 36);
-			v30 = (double)SLODWORD(v68);
-		}
-		v68 = v30 * v69;
-		v31 = v70 - v68 - v72 - v71;
-		v69 = v31;
-		if (v31 < 0.0) {
-			v32 = v70 - v69;
-			v69 = 0.0;
-			v70 = v32;
-		}
-		v33 = *(uint32_t*)(dword_5d4594_1063116 + 116);
-		if (v33 & 0xC) {
-			v34 =
-				nox_strman_loadString_40F1D0("WeaponDamageLabelNA", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2770);
-			nox_swprintf(v75, v34);
-		} else if (!(v33 & 2) || v2) {
-			v58 = v70;
-			v55 = nox_strman_loadString_40F1D0("WeaponDamageLabel", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2776);
-			nox_swprintf(v75, v55, v58);
-		} else {
-			v57 = v70;
-			v54 = nox_strman_loadString_40F1D0("WeaponDamageLabelUnknownPlus", 0,
-											   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2773);
-			nox_swprintf(v75, v54, v57);
-		}
-		nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-		nox_wcsncpy(v75, L"  ", sizeof(v75)/2);
-		v59 = v68;
-		v35 = nox_strman_loadString_40F1D0("BaseDamageLabel", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2785);
-		nox_swprintf(v76, v35, v59);
-		nox_wcscat(v75, v76);
-		nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-		nox_wcsncpy(v75, L"  ", sizeof(v75)/2);
-		v60 = v69;
-		v36 = nox_strman_loadString_40F1D0("StrengthDamageLabel", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2792);
-		nox_swprintf(v76, v36, v60);
-		nox_wcscat(v75, v76);
-		nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-		if (v72 > 0.0) {
-			nox_wcsncpy(v75, L"  ", sizeof(v75)/2);
-			v61 = v72;
-			v37 = nox_strman_loadString_40F1D0("FireDamageLabel", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2801);
-			nox_swprintf(v76, v37, v61);
-			nox_wcscat(v75, v76);
-			nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-		}
-		if (v71 > 0.0) {
-			nox_wcsncpy(v75, L"  ", sizeof(v75)/2);
-			v62 = v71;
-			v38 = nox_strman_loadString_40F1D0("ElectricalDamageLabel", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c",
-											   2811);
-			nox_swprintf(v76, v38, v62);
-			nox_wcscat(v75, v76);
-			nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-		}
-		nox_window_call_field_94((int)v10, 16397, (int)getMemAt(0x5D4594, 1063668), -1);
-		goto LABEL_71;
-	}
-	v17 = (float*)nox_xxx_equipClothFindDefByTT_413270(*(uint32_t*)(dword_5d4594_1063116 + 108));
-	v18 = 1.0;
-	v19 = *(uint32_t*)(dword_5d4594_1063116 + 432);
-	if (v19 && *(float* (**)(int, int, int, int, int, float*))(v19 + 76) == sub_4E0370) {
-		v18 = *(float*)(v19 + 80);
-	}
-	v65 = v18 * v17[16] * 1000.0 + 0.5;
-	v20 = nox_float2int(v65);
-	if (*(uint8_t*)(dword_5d4594_1063116 + 116) & 2) {
-		v21 = nox_strman_loadString_40F1D0("ArmorValueLabelNA", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2647);
-		nox_swprintf(v75, v21);
-	} else {
-		v66 = v20;
-		v22 = nox_strman_loadString_40F1D0("ArmorValueLabel", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2649);
-		nox_swprintf(v75, v22, v66);
-	}
-	nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-	nox_window_call_field_94((int)v10, 16397, (int)getMemAt(0x5D4594, 1063664), -1);
-LABEL_71:
-	v15 = dword_5d4594_1063116;
-LABEL_72:
-	v39 = *(uint32_t*)(v15 + 112);
-	if (v39 & 0x13001000) {
-		if (v39 & 0x11001000) {
-			v40 = nox_xxx_getProjectileClassById_413250(*(uint32_t*)(v15 + 108));
-		} else {
-			v40 = nox_xxx_equipClothFindDefByTT_413270(*(uint32_t*)(v15 + 108));
-		}
-		if (v40) {
-			v15 = dword_5d4594_1063116;
-			v43 = dword_5d4594_1063116 + 432;
-			if (*(uint32_t*)(dword_5d4594_1063116 + 112) & 0x10000000) {
-				goto LABEL_91;
-			}
-			v44 = *(uint32_t*)(dword_5d4594_1063116 + 440);
-			if (v44 && *(uint32_t*)(v44 + 16)) {
-				v45 = nox_strman_loadString_40F1D0("IdentifySpecialAttributes", 0,
-												   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2851);
-				nox_swprintf(v75, v45);
-				nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-				v46 = 0;
-				nox_wcsncpy(v75, L"  ", sizeof(v75)/2);
-				nox_swprintf(v76, *(const wchar2_t**)(*(uint32_t*)(v43 + 8) + 16));
-				nox_wcscat(v75, v76);
-				nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-				v15 = dword_5d4594_1063116;
-			} else {
-				v46 = v73;
-			}
-			v47 = *(uint32_t*)(v43 + 12);
-			if (v47 && *(uint32_t*)(v47 + 16)) {
-				if (v46 == 1) {
-					v48 = nox_strman_loadString_40F1D0("IdentifySpecialAttributes", 0,
-													   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2868);
-					nox_swprintf(v75, v48);
-					nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-					v73 = 0;
-					v46 = 0;
-				}
-				nox_wcsncpy(v75, L"  ", sizeof(v75)/2);
-				nox_swprintf(v76, *(const wchar2_t**)(*(uint32_t*)(v43 + 12) + 16));
-				nox_wcscat(v75, v76);
-				nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-				v15 = dword_5d4594_1063116;
-			}
-			if (v46) {
-				goto LABEL_91;
-			}
-			nox_window_call_field_94((int)v10, 16397, (int)getMemAt(0x5D4594, 1063672), -1);
-		} else {
-			v41 = nox_strman_loadString_40F1D0("IdentifySpecialAttributes", 0,
-											   "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2835);
-			nox_swprintf(v75, v41);
-			nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-			v42 = nox_strman_loadString_40F1D0("IdentifyUnknown", 0, "C:\\NoxPost\\src\\Client\\Gui\\guiinv.c", 2837);
-			nox_swprintf(v75, v42);
-			nox_window_call_field_94((int)v10, 16397, (int)v75, -1);
-		}
-		v15 = dword_5d4594_1063116;
-	}
-LABEL_91:
-	v49 = nox_get_thing_desc(*(uint32_t*)(v15 + 108));
-	if (v49) {
-		nox_window_call_field_94((int)v10, 16397, v49, -1);
-	}
+	nox_xxx_itemInfoLines_4627F0(dword_5d4594_1063116, sub_4627F0_addLine, v10);
 	v67 = nox_get_thing_pretty_image(*(uint32_t*)(dword_5d4594_1063116 + 108));
 	v50 = nox_xxx_wndGetChildByID_46B0C0(*(uint32_t**)&dword_5d4594_1062476, 9155);
 	return nox_xxx_wndSetIcon_46AE60((int)v50, v67);

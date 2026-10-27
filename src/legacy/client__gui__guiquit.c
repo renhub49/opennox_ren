@@ -119,12 +119,8 @@ int nox_xxx_menuGameOnButton_445840(uint32_t* a1, int a2, int* a3, int a4) {
 		break;
 	case 9004:
 		nox_xxx_wndClearCaptureMain_46ADE0(nox_wnd_quitMenu_825760);
-		v22 = nox_strman_loadString_40F1D0("GUIQuit.c:ReallyQuitMessage", 0, "C:\\NoxPost\\src\\client\\Gui\\guiquit.c",
-										   185);
-		v13 = nox_strman_loadString_40F1D0("GUIQuit.c:ReallyQuitTitle", 0, "C:\\NoxPost\\src\\client\\Gui\\guiquit.c",
-										   184);
-		nox_xxx_dialogMsgBoxCreate_449A10(nox_wnd_quitMenu_825760, (int)v13, (int)v22, 56, nox_xxx_quitDialogYes_445B20,
-										  nox_xxx_quitDialogNo_445B30);
+		// OpenNox: the dialog is created in Go, with Main Menu, To Desktop and Cancel buttons
+		nox_client_showQuitDialog();
 		v14 = a3[9];
 		LOBYTE(v14) = v14 & 0xFD;
 		a3[9] = v14;

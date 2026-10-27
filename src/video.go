@@ -12,6 +12,14 @@ import (
 )
 
 const (
+	configVideoGUIScale    = "video.gui_scale"
+	configVideoCursorScale = "video.cursor_scale"
+
+	guiScaleMin = 1.0
+	guiScaleMax = 3.0
+)
+
+const (
 	noxDefaultWidth  = seat.DefaultWidth
 	noxDefaultHeight = seat.DefaultHeight
 	noxDefaultDepth  = seat.DefaultDepth
@@ -49,6 +57,20 @@ var (
 
 	g_scaled_cfg     = 0
 	g_fullscreen_cfg = 0
+
+	// noxGUIScale is the requested GUI scale. It is applied when the game switches to the game video mode.
+	noxGUIScale = float32(1)
+
+	// noxCursorScale is the requested scale of the cursor and tooltips.
+	noxCursorScale = float32(1)
+
+	// noxScreen tracks the screen space used by the legacy code (nox_win_width/height and mouse position).
+	// The world is always rendered at full resolution, while GUI can use a smaller screen space that is upscaled.
+	noxScreen = struct {
+		world image.Point // size of the world render
+		gui   float32     // GUI scale for the current video mode
+		cur   float32     // scale of the current screen space
+	}{gui: 1, cur: 1}
 )
 
 func init() {
@@ -87,6 +109,131 @@ func init() {
 			return true
 		},
 	})
+	noxConsole.Register(&console.Command{
+		Token: "guiscale",
+		Help:  "guiscale [1.0-3.0]: sets GUI scale, applies on the next game",
+		Flags: console.ClientServer,
+		Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
+			return consoleScaleCmd(c, "guiscale", tokens, &noxGUIScale, configVideoGUIScale)
+		},
+	})
+	noxConsole.Register(&console.Command{
+		Token: "cursorscale",
+		Help:  "cursorscale [1.0-3.0]: sets cursor and tooltip scale",
+		Flags: console.ClientServer,
+		Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
+			return consoleScaleCmd(c, "cursorscale", tokens, &noxCursorScale, configVideoCursorScale)
+		},
+	})
+	viper.SetDefault(configVideoGUIScale, 1.0)
+	viper.SetDefault(configVideoCursorScale, 1.0)
+	registerOnConfigRead(func() {
+		noxGUIScale = clampGUIScale(float32(viper.GetFloat64(configVideoGUIScale)))
+		noxCursorScale = clampGUIScale(float32(viper.GetFloat64(configVideoCursorScale)))
+	})
+}
+
+func consoleScaleCmd(c *console.Console, name string, tokens []string, ptr *float32, key string) bool {
+	if len(tokens) == 0 {
+		c.Printf(console.ColorLightYellow, "%s = %.2f", name, *ptr)
+		return true
+	} else if len(tokens) > 1 {
+		return false
+	}
+	v, err := strconv.ParseFloat(tokens[0], 32)
+	if err != nil {
+		return false
+	}
+	setGUIScaleOpt(ptr, key, float32(v))
+	c.Printf(console.ColorLightYellow, "%s = %.2f", name, *ptr)
+	return true
+}
+
+func setGUIScaleOpt(ptr *float32, key string, v float32) {
+	*ptr = clampGUIScale(v)
+	viper.Set(key, *ptr)
+	writeConfigLater()
+}
+
+func clampGUIScale(v float32) float32 {
+	if v < guiScaleMin {
+		v = guiScaleMin
+	}
+	if v > guiScaleMax {
+		v = guiScaleMax
+	}
+	return v
+}
+
+// guiScaleFor limits the scale, so that the scaled screen is not smaller than the original game resolution.
+func guiScaleFor(world image.Point, s float32) float32 {
+	if s <= 1 || world.X <= 0 || world.Y <= 0 {
+		return 1
+	}
+	if m := float32(world.X) / noxDefaultWidth; s > m {
+		s = m
+	}
+	if m := float32(world.Y) / noxDefaultHeight; s > m {
+		s = m
+	}
+	if s < 1 {
+		return 1
+	}
+	return s
+}
+
+// screenSizeFor returns the size of the screen space with a given scale.
+func screenSizeFor(world image.Point, s float32) image.Point {
+	if s <= 1 {
+		return world
+	}
+	return image.Point{
+		X: int(float32(world.X)/s + 0.5),
+		Y: int(float32(world.Y)/s + 0.5),
+	}
+}
+
+// videoGetWorldSize returns the size of the world render, which is not affected by GUI scale.
+func videoGetWorldSize() image.Point {
+	if noxScreen.world == (image.Point{}) {
+		return videoGetWindowSize()
+	}
+	return noxScreen.world
+}
+
+// setScreenScale switches nox_win_width/height and the mouse position to a screen space
+// that is s times smaller than the world render. It returns the previous scale.
+func setScreenScale(s float32) float32 {
+	prev := noxScreen.cur
+	if s == prev {
+		return prev
+	}
+	noxScreen.cur = s
+	sz := screenSizeFor(noxScreen.world, s)
+	videoSetWindowSize(sz)
+	if noxClient != nil {
+		noxClient.SetMouseScreen(noxScreen.world, sz)
+	}
+	return prev
+}
+
+// withScreenScale runs the function in a screen space with a given scale.
+func withScreenScale(s float32, fnc func()) {
+	prev := setScreenScale(s)
+	defer setScreenScale(prev)
+	fnc()
+}
+
+// withWorldScreen runs the function in the screen space of the world render.
+func withWorldScreen(fnc func()) {
+	withScreenScale(1, fnc)
+}
+
+// applyGUIScale switches the default screen space to the requested GUI scale.
+// It must be called after the video mode is set, but before the game GUI is created.
+func applyGUIScale() {
+	noxScreen.gui = guiScaleFor(noxScreen.world, noxGUIScale)
+	setScreenScale(noxScreen.gui)
 }
 
 func videoModeID() int {
@@ -150,7 +297,13 @@ func videoResizeView(mode image.Point) {
 	if mode.Y > max.Y {
 		mode.Y = max.Y
 	}
+	noxScreen.world = mode
+	noxScreen.gui = 1
+	noxScreen.cur = 1
 	videoSetWindowSize(mode)
+	if noxClient != nil {
+		noxClient.SetMouseScreen(mode, mode)
+	}
 }
 
 func changeWindowedOrFullscreen() {

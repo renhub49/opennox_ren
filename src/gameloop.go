@@ -34,6 +34,7 @@ var (
 	continueMenuOrHost      = true // nox_game_continueMenuOrHost_93200
 	initialStateSwitch      = false
 	mainloopStopError       bool
+	mainloopExitApp         bool
 	mainloopNoSkip          bool
 	useFrameLimit           = true
 	mainloopHook            func()
@@ -97,6 +98,12 @@ func (c *Client) mainloopFrameLimit() {
 
 func mainloopStop() {
 	mainloopStopError = true
+}
+
+// mainloopExitToDesktop stops the main loop and exits the game, even if called while playing.
+func mainloopExitToDesktop() {
+	mainloopExitApp = true
+	mainloopStop()
 }
 
 func (c *Client) mainloop_43E290(exitPath bool) {
@@ -165,6 +172,10 @@ mainloop:
 			continue mainloop
 		}
 	MAINLOOP_EXIT:
+		if mainloopExitApp {
+			cleanup()
+			nox_exit(0)
+		}
 		if !exitPath {
 			if !continueMenuOrHost || mainloopStopError {
 				cleanup()

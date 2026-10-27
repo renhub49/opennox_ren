@@ -240,6 +240,7 @@ func init() {
 	legacy.Nox_xxx_gameSetAudioFadeoutMb_501AC0 = nox_xxx_gameSetAudioFadeoutMb_501AC0
 	legacy.Nox_xxx_unitUpdateMonster_50A5C0 = nox_xxx_unitUpdateMonster_50A5C0
 	legacy.Sub_446380 = sub_446380
+	legacy.ShowQuitDialog = showQuitDialog
 	legacy.Nox_xxx_cliUpdateCameraPos_435600 = nox_xxx_cliUpdateCameraPos_435600
 	legacy.Sub_437260 = sub_437260
 	legacy.Get_nox_client_texturedFloors_154956 = get_nox_client_texturedFloors_154956

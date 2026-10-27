@@ -39,6 +39,10 @@ var (
 	dword_5d4594_830236      *gui.Window
 	func_5D4594_830220       func()
 	func_5d4594_830216       func()
+	// dialogNoFunc is called by the No button instead of the Cancel function, if set
+	dialogNoFunc func()
+	// dialogEscCancels makes Esc key press the Cancel button
+	dialogEscCancels bool
 )
 
 func sub_44A4A0() int {
@@ -66,6 +70,8 @@ func NewDialogWindow(a1 *gui.Window, title string, text string, flags gui.Dialog
 	dword_5d4594_830232 = nil
 	func_5D4594_830220 = a5
 	func_5d4594_830216 = a6
+	dialogNoFunc = nil
+	dialogEscCancels = false
 	if nox_gui_curDialog_830224 != nil {
 		sub449EA0(flags)
 		if title != "" {
@@ -214,6 +220,11 @@ func sub_449BE0(win *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 	case gui.WindowKeyPress:
 		switch ev.Key {
 		case keybind.KeyEsc:
+			if dialogEscCancels {
+				if b := win.ChildByID(guiDialogCancelID); b != nil && !b.GetFlags().IsHidden() {
+					win.Func94(&WindowEvent0x4007{Win: b})
+				}
+			}
 			return gui.RawEventResp(1)
 		case keybind.KeySpace:
 			mpos := noxClient.GetMousePos()
@@ -262,7 +273,9 @@ func nox_xxx_windowDlgProc_449CA0(a1 *gui.Window, ev gui.WindowEvent) gui.Window
 				nox_gui_curDialog_830224.StackPop()
 			}
 			dword_5d4594_830228.Func94(ev)
-			if func_5d4594_830216 != nil {
+			if ev.Win.ID() == guiDialogNoID && dialogNoFunc != nil {
+				dialogNoFunc()
+			} else if func_5d4594_830216 != nil {
 				func_5d4594_830216()
 			}
 			if memmap.Uint8(0x5D4594, 830240)&0x20 == 0 {

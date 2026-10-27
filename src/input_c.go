@@ -309,7 +309,7 @@ func (c *Client) nox_xxx_cursorUpdate_46B740_sprites(v63 bool, v66 []int) {
 			if v47.Flags.Has(gui.StatusHidden) {
 				continue
 			}
-			mpos := c.Inp.GetMousePos()
+			mpos := c.GetMousePos()
 			if v47.PointIn(mpos) {
 				if v47 == v46 {
 					v65 = mpos
@@ -400,7 +400,7 @@ func (c *Client) nox_xxx_cursorUpdate_46B740() {
 	states[input.NOX_MOUSE_MIDDLE] = int(c.Inp.GetMouseState(seat.MouseButtonMiddle))
 	states[3] = c.Inp.GetMouseWheel()
 
-	mpos := c.Inp.GetMousePos()
+	mpos := c.GetMousePos()
 	legacy.Nox_xxx_cursorSetTooltip_4776B0("")
 	if nox_client_gui_flag_815132 != 0 || nox_xxx_guiCursor_477600() != 0 {
 		c.Nox_client_setCursorType(gui.CursorSelect)
@@ -440,7 +440,7 @@ func (c *Client) nox_xxx_cursorUpdate_46B740() {
 		switch input.MouseStateCode(states[input.NOX_MOUSE_LEFT]) {
 		case 0, input.NOX_MOUSE_LEFT_PRESSED:
 			if c.GUI.WinYYY.Flags.Has(4) && legacy.Sub_45D9B0() == 0 {
-				dp := c.Inp.GetMouseRel()
+				dp := c.GetMouseRel()
 				off := c.GUI.WinYYY.Offs()
 				end := c.GUI.WinYYY.End()
 				if par := c.GUI.WinYYY.Parent(); par != nil {
@@ -610,20 +610,26 @@ func (c *Client) nox_xxx_cursorUpdate_46B740() {
 		if v0 == nil && legacy.Nox_xxx_wnd_46C2A0(v1) != 0 {
 			v0 = v1
 		}
-		if c.Inp.GetDistSlow() {
+		// item tooltips stay while the mouse moves over items, other tooltips only show when the mouse is slow
+		keepItem := !c.Inp.GetDistSlow() && c.itemTooltipShown
+		if c.Inp.GetDistSlow() || keepItem {
 			if v0 != nil {
 				if v0.TooltipFuncPtr != nil {
 					sx := uint16(mpos.X)
 					sy := uint16(mpos.Y)
 					spos := uintptr(uint32(sx) | (uint32(sy) << 16))
 					v0.TooltipFunc(spos)
-				} else if str := v0.DrawData().Tooltip(); str != "" {
+				} else if str := v0.DrawData().Tooltip(); str != "" && !keepItem {
 					legacy.Nox_xxx_cursorSetTooltip_4776B0(str)
 				}
-			} else {
+			} else if !keepItem {
 				v63 = true
 			}
+			if keepItem && c.tooltipItem() == nil {
+				legacy.Nox_xxx_cursorSetTooltip_4776B0("")
+			}
 		}
+		c.itemTooltipShown = c.tooltipItem() != nil
 	}
 	if c.GUI.WinYYY == nil && v1 != c.GUI.ActiveXXX {
 		if c.GUI.Captured() != nil {
