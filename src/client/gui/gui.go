@@ -182,6 +182,63 @@ func (g *GUI) Draw() {
 	}
 }
 
+// Relayout moves top-level windows after the screen size changes.
+// Windows stay anchored to the nearest screen edge or the center, windows spanning the screen are stretched.
+func (g *GUI) Relayout(old, cur image.Point) {
+	if old == cur {
+		return
+	}
+	for win := g.head; win != nil; win = win.Next() {
+		win.relayout(old, cur)
+	}
+}
+
+func (win *Window) relayout(old, cur image.Point) {
+	if win.isNilOrDead() {
+		return
+	}
+	off, sz := win.Offs(), win.Size()
+	nsz := sz
+	noff := image.Point{
+		X: relayoutAxis(off.X, sz.X, old.X, cur.X, &nsz.X),
+		Y: relayoutAxis(off.Y, sz.Y, old.Y, cur.Y, &nsz.Y),
+	}
+	if nsz != sz {
+		win.SizeVal = nsz
+		for sub := win.Field100Ptr; sub != nil; sub = sub.Prev() {
+			sub.relayout(sz, nsz)
+		}
+	}
+	win.SetPos(noff)
+	if dp := noff.Sub(off); dp != (image.Point{}) {
+		shiftAnims(win, dp)
+	}
+}
+
+// relayoutAxis returns a new offset of the window on one axis, and updates its size, if it spans the whole axis.
+func relayoutAxis(off, sz, old, cur int, nsz *int) int {
+	if old == cur {
+		return off
+	}
+	if off <= 0 && off+sz >= old {
+		*nsz = sz + cur - old
+		return off
+	}
+	dl := off
+	dr := old - (off + sz)
+	dc := off + sz/2 - old/2
+	if dc < 0 {
+		dc = -dc
+	}
+	switch {
+	case dc <= dl && dc <= dr:
+		return off + (cur-old)/2
+	case dr < dl:
+		return off + cur - old
+	}
+	return off
+}
+
 func (g *GUI) Last() *Window {
 	return g.last
 }

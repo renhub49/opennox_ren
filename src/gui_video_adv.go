@@ -95,7 +95,7 @@ func (c *guiAdvOptions) Init(cli *Client) {
 		c.noxVideoAdvOpts[opt.ID] = opt
 	}
 	c.noxVideoScaleOpts = []*videoScaleOpt{
-		{TextID: 2060, SliderID: 2061, Text: "GUI", Tooltip: "GUI scale: applies when a game is loaded or started", Ptr: &noxGUIScale, Key: configVideoGUIScale},
+		{TextID: 2060, SliderID: 2061, Text: "GUI", Tooltip: "GUI scale", Ptr: &noxGUIScale, Key: configVideoGUIScale},
 		{TextID: 2062, SliderID: 2063, Text: "Cursor", Tooltip: "Cursor and tooltip scale", Ptr: &noxCursorScale, Key: configVideoCursorScale},
 	}
 }

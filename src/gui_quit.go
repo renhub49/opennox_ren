@@ -28,20 +28,30 @@ func nox_xxx_wndLoadQuitMenu_445790() int {
 		noxClient.r.DrawRectFilledAlpha(pos.X, pos.Y, sz.X, sz.Y)
 		return 1
 	}, nil)
-	sz := win.Size()
 	win.DrawData().SetBackgroundColor(nox_color_black_2650656)
-	win.Off.X = int(nox_win_width-sz.X) / 2
-	win.EndPos.X = win.Off.X + sz.X
-	if nox_win_height > 768 {
-		win.Off.Y = (nox_win_height - sz.Y - nox_win_height/3) / 2
-		win.EndPos.Y = win.Off.Y + sz.Y
-	}
+	quitMenuFileY = win.Offs().Y
+	setQuitMenuPos(win)
 	legacy.Sub_445C40()
 	dword_5d4594_825752 = 0
 	dword_5d4594_825768 = 0
 	str := strMan.GetStringInFile("Vote", "guiquit.c")
 	alloc.StrCopyZero(memmap.PtrT[[256]byte](0x5D4594, 825772)[:], str)
 	return 1
+}
+
+// quitMenuFileY is the vertical position of the quit menu, as defined in the window file.
+var quitMenuFileY int
+
+// setQuitMenuPos places the quit menu for the current screen size.
+func setQuitMenuPos(win *gui.Window) {
+	sz := win.Size()
+	win.Off.X = int(nox_win_width-sz.X) / 2
+	win.EndPos.X = win.Off.X + sz.X
+	win.Off.Y = quitMenuFileY
+	if nox_win_height > 768 {
+		win.Off.Y = (nox_win_height - sz.Y - nox_win_height/3) / 2
+	}
+	win.EndPos.Y = win.Off.Y + sz.Y
 }
 
 // showQuitDialog shows a dialog for leaving the game: to the main menu, to the desktop, or cancel.

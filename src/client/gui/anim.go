@@ -68,6 +68,16 @@ func NewAnim(win *Window, p1, p2, dpIn, dpOut image.Point) *Anim {
 	return a
 }
 
+// shiftAnims moves animation positions of the window, after the window itself was moved.
+func shiftAnims(win *Window, dp image.Point) {
+	for a := animList; a != nil; a = a.next {
+		if a.win == win {
+			a.p1 = a.p1.Add(dp)
+			a.p2 = a.p2.Add(dp)
+		}
+	}
+}
+
 func newAnim(win *Window) *Anim {
 	a, _ := alloc.New(Anim{})
 	a.win = win

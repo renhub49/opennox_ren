@@ -1443,3 +1443,12 @@ func Get_dword_5d4594_2488620() uint32 {
 func Nox_xxx_playerGet_470A90() int {
 	return int(C.dword_5d4594_1096252)
 }
+
+func Get_dword_5d4594_1047548() int  { return int(int32(C.dword_5d4594_1047548)) }
+func Set_dword_5d4594_1047548(v int) { C.dword_5d4594_1047548 = C.uint32_t(v) }
+func Get_dword_5d4594_1047552() int  { return int(int32(C.dword_5d4594_1047552)) }
+func Set_dword_5d4594_1047552(v int) { C.dword_5d4594_1047552 = C.uint32_t(v) }
+func Get_dword_5d4594_1049536() int  { return int(int32(C.dword_5d4594_1049536)) }
+func Set_dword_5d4594_1049536(v int) { C.dword_5d4594_1049536 = C.uint32_t(v) }
+func Get_dword_5d4594_1320988() int  { return int(int32(C.dword_5d4594_1320988)) }
+func Set_dword_5d4594_1320988(v int) { C.dword_5d4594_1320988 = C.uint32_t(v) }

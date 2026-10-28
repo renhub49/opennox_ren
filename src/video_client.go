@@ -8,6 +8,7 @@ import (
 	"image/color"
 	"slices"
 
+	"github.com/opennox/libs/client/seat"
 	"github.com/opennox/libs/ifs"
 	"github.com/opennox/libs/noximage"
 
@@ -110,6 +111,86 @@ func (c *Client) gameResetVideoMode(inMenu, force bool) error {
 		applyGUIScale()
 	}
 	return nil
+}
+
+func init() {
+	guiScaleChanged = func() {
+		guiScalePending = true
+	}
+}
+
+// guiScalePending is set when the GUI scale setting changes, but it's not applied yet.
+var guiScalePending bool
+
+// applyPendingGUIScale applies a changed GUI scale after the mouse button is released.
+// The GUI moves under the mouse when the scale changes, which would confuse sliders that are dragged.
+func (c *Client) applyPendingGUIScale() {
+	if !guiScalePending || c.Inp == nil || c.Inp.IsMousePressed(seat.MouseButtonLeft) {
+		return
+	}
+	guiScalePending = false
+	applyGUIScaleLive()
+}
+
+// applyGUIScaleLive applies a new GUI scale while in the game, by moving the GUI to the new screen size.
+func applyGUIScaleLive() {
+	if !noxScreen.game {
+		return // applied when the game starts
+	}
+	world := noxScreen.world
+	old := screenSizeFor(world, noxScreen.gui)
+	noxScreen.gui = guiScaleFor(world, noxGUIScale)
+	cur := screenSizeFor(world, noxScreen.gui)
+	setScreenScale(noxScreen.gui)
+	if old == cur {
+		return
+	}
+	noxClient.GUI.Relayout(old, cur)
+	relayoutGUIValues(old, cur)
+	// the quit menu is not anchored to an edge
+	if win := legacy.Get_nox_wnd_quitMenu_825760(); win != nil {
+		setQuitMenuPos(win)
+	}
+}
+
+// guiScreenRects are offsets of screen bounds, stored by GUI elements when they are created.
+var guiScreenRects = []uintptr{1049740, 1091916, 1098500, 1319116, 1320196}
+
+// relayoutGUIValues updates positions, which GUI elements compute from the screen size when they are created.
+// Each value is updated only if it still has the value computed for the old screen size.
+func relayoutGUIValues(old, cur image.Point) {
+	upd := func(p *int32, was, now int) {
+		if int(*p) == was {
+			*p = int32(now)
+		}
+	}
+	updVar := func(get func() int, set func(int), was, now int) {
+		if get() == was {
+			set(now)
+		}
+	}
+	for _, off := range guiScreenRects {
+		upd(memmap.PtrInt32(0x5D4594, off), old.X, cur.X)
+		upd(memmap.PtrInt32(0x5D4594, off+4), old.Y, cur.Y)
+		upd(memmap.PtrInt32(0x5D4594, off+24), old.X, cur.X)
+		upd(memmap.PtrInt32(0x5D4594, off+28), old.Y, cur.Y)
+	}
+	upd(memmap.PtrInt32(0x5D4594, 831284), (old.X-noxDefaultWidth)/2, (cur.X-noxDefaultWidth)/2)
+	upd(memmap.PtrInt32(0x5D4594, 831288), (old.Y-noxDefaultHeight)/2, (cur.Y-noxDefaultHeight)/2)
+	upd(memmap.PtrInt32(0x5D4594, 1064876), old.X/2, cur.X/2)
+	upd(memmap.PtrInt32(0x5D4594, 1064880), 2*old.Y/3, 2*cur.Y/3)
+	upd(memmap.PtrInt32(0x587000, 133668), old.Y, cur.Y)
+	// spell bar
+	updVar(legacy.Get_dword_5d4594_1047548, legacy.Set_dword_5d4594_1047548, (old.X-320)/2, (cur.X-320)/2)
+	updVar(legacy.Get_dword_5d4594_1047552, legacy.Set_dword_5d4594_1047552, old.Y-74, cur.Y-74)
+	switch legacy.Get_dword_5d4594_1049536() {
+	case old.Y - 74: // shown
+		legacy.Set_dword_5d4594_1049536(cur.Y - 74)
+	case old.Y + 1: // hidden
+		legacy.Set_dword_5d4594_1049536(cur.Y + 1)
+	}
+	// summon creature panel
+	updVar(legacy.Get_dword_5d4594_1320988, legacy.Set_dword_5d4594_1320988, old.X-95, cur.X-95)
 }
 
 // guiLayer is an offscreen buffer for drawing a part of the UI in a smaller screen space.

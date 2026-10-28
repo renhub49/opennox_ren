@@ -70,7 +70,11 @@ var (
 		world image.Point // size of the world render
 		gui   float32     // GUI scale for the current video mode
 		cur   float32     // scale of the current screen space
+		game  bool        // GUI scale is applied for the game video mode
 	}{gui: 1, cur: 1}
+
+	// guiScaleChanged is called when the GUI scale setting changes.
+	guiScaleChanged func()
 )
 
 func init() {
@@ -111,7 +115,7 @@ func init() {
 	})
 	noxConsole.Register(&console.Command{
 		Token: "guiscale",
-		Help:  "guiscale [1.0-3.0]: sets GUI scale, applies on the next game",
+		Help:  "guiscale [1.0-3.0]: sets GUI scale",
 		Flags: console.ClientServer,
 		Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
 			return consoleScaleCmd(c, "guiscale", tokens, &noxGUIScale, configVideoGUIScale)
@@ -153,6 +157,9 @@ func setGUIScaleOpt(ptr *float32, key string, v float32) {
 	*ptr = clampGUIScale(v)
 	viper.Set(key, *ptr)
 	writeConfigLater()
+	if ptr == &noxGUIScale && guiScaleChanged != nil {
+		guiScaleChanged()
+	}
 }
 
 func clampGUIScale(v float32) float32 {
@@ -233,6 +240,7 @@ func withWorldScreen(fnc func()) {
 // It must be called after the video mode is set, but before the game GUI is created.
 func applyGUIScale() {
 	noxScreen.gui = guiScaleFor(noxScreen.world, noxGUIScale)
+	noxScreen.game = true
 	setScreenScale(noxScreen.gui)
 }
 
@@ -300,6 +308,7 @@ func videoResizeView(mode image.Point) {
 	noxScreen.world = mode
 	noxScreen.gui = 1
 	noxScreen.cur = 1
+	noxScreen.game = false
 	videoSetWindowSize(mode)
 	if noxClient != nil {
 		noxClient.SetMouseScreen(mode, mode)
