@@ -143,6 +143,7 @@ func (c *Client) ClientPlayerUnit() *client.Drawable {
 
 func (c *Client) Update() bool {
 	defer noxPerfmon.startProfileClient()()
+	c.autosaveTick()
 	if !isDedicatedServer {
 		c.inDraw1 = true
 		if c.DrawFunc != nil && !c.DrawFunc() {

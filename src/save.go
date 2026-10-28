@@ -6,7 +6,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
+	"time"
 	"unsafe"
 
 	"github.com/opennox/libs/common"
@@ -18,6 +21,7 @@ import (
 	"github.com/opennox/libs/object"
 	"github.com/opennox/libs/types"
 	crypt "github.com/opennox/noxcrypt"
+	"github.com/spf13/viper"
 
 	noxflags "github.com/opennox/opennox/v1/common/flags"
 	"github.com/opennox/opennox/v1/common/memmap"
@@ -62,10 +66,108 @@ func makeSaveDir(name string) (string, error) {
 	return dir, err
 }
 
+const (
+	saveBackupsDir = "SaveBackups"
+	saveBackupsMax = 3
+
+	configAutosaveMinutes = "game.extensions.autosave_minutes"
+)
+
+var (
+	// autosaveChoices are autosave intervals in minutes that can be selected in the options; zero disables autosave.
+	autosaveChoices = []int{0, 5, 10}
+	autosaveMinutes = 0
+	autosaveLast    time.Time
+)
+
+func init() {
+	viper.SetDefault(configAutosaveMinutes, 0)
+	registerOnConfigRead(func() {
+		autosaveMinutes = viper.GetInt(configAutosaveMinutes)
+	})
+}
+
+func setAutosaveMinutes(v int) {
+	autosaveMinutes = v
+	autosaveLast = time.Time{}
+	viper.Set(configAutosaveMinutes, v)
+	writeConfigLater()
+}
+
+// autosaveTick saves the solo game to the autosave slot every few minutes, same as the "Save to AutoSave" button.
+func (c *Client) autosaveTick() {
+	if autosaveMinutes <= 0 || !noxflags.HasGame(noxflags.GameModeCoop) || gameGetPlayState() != 3 {
+		autosaveLast = time.Time{}
+		return
+	}
+	now := time.Now()
+	if autosaveLast.IsZero() {
+		autosaveLast = now
+		return
+	}
+	if now.Sub(autosaveLast) < time.Duration(autosaveMinutes)*time.Minute {
+		return
+	}
+	if pu := c.ClientPlayerUnit(); pu == nil || pu.ObjFlags.Has(object.FlagDead) || dword_5d4594_1563080 {
+		return // try again later
+	}
+	autosaveLast = now
+	setSaveFileName(common.SaveAuto)
+	sub_4DB170(true, nil, 0) // the game prints its own message when saved
+}
+
+// backupSaveDir copies a save before it's removed or overwritten, keeping only the last few backups.
+func backupSaveDir(name string) {
+	if strings.EqualFold(name, common.SaveTmp) {
+		return // temporary copy of the current game, not a save
+	}
+	src := datapath.Save(name)
+	if _, err := ifs.Stat(filepath.Join(src, "Player.plr")); err != nil {
+		return // no save there
+	}
+	root := datapath.Data(saveBackupsDir)
+	if err := ifs.MkdirAll(root); err != nil {
+		saveLog.Println("cannot create save backups dir:", err)
+		return
+	}
+	// backup names start with the time, so they sort from the oldest to the newest
+	base := time.Now().Format("2006-01-02_15-04-05") + "_" + name
+	dst := filepath.Join(root, base)
+	for i := 2; ; i++ {
+		if _, err := ifs.Stat(dst); err != nil {
+			break
+		}
+		dst = filepath.Join(root, base+"_"+strconv.Itoa(i))
+	}
+	if err := ifs.CopyDir(src, dst); err != nil {
+		saveLog.Println("cannot backup save:", err)
+		return
+	}
+	saveLog.Printf("save %q backed up to %q", name, dst)
+	list, err := ifs.ReadDir(root)
+	if err != nil {
+		return
+	}
+	var dirs []string
+	for _, e := range list {
+		if e.IsDir() {
+			dirs = append(dirs, e.Name())
+		}
+	}
+	sort.Strings(dirs)
+	for len(dirs) > saveBackupsMax {
+		if err := ifs.RemoveAll(filepath.Join(root, dirs[0])); err != nil {
+			saveLog.Println("cannot remove old save backup:", err)
+		}
+		dirs = dirs[1:]
+	}
+}
+
 func deleteSaveDir(name string, rmdir bool) error {
 	if name == "" {
 		return nil
 	}
+	backupSaveDir(name)
 	saveDir := datapath.Save(name)
 	if err := ifs.RemoveAll(saveDir); err != nil {
 		return err

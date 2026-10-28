@@ -2799,6 +2799,9 @@ uint16_t* nox_xxx_cliAddHealthChange_49A650(int a1, short a2) {
 	return result;
 }
 
+// OpenNox: hides damage numbers drawn by sub_49A6A0.
+int nox_client_damageNumbersHidden = 0;
+
 //----- (0049A6A0) --------------------------------------------------------
 void sub_49A6A0(nox_draw_viewport_t* vp, nox_drawable* dr) {
 	uint32_t* a1 = vp;
@@ -2831,23 +2834,26 @@ void sub_49A6A0(nox_draw_viewport_t* vp, nox_drawable* dr) {
 			v11 = (uint32_t*)v2[3];
 			if ((unsigned int)(v10 - v3) <= 0x1E) {
 				if (*v2 == *(uint32_t*)(a2 + 128)) {
-					v5 = *a1 + *(uint32_t*)(a2 + 12) - a1[4];
-					v6 = *(uint32_t*)(a2 + 16) + a1[1] + 2 * (v3 - v10) - *(short*)(a2 + 104) -
-						 (unsigned long long)(long long)*(float*)(a2 + 100) - a1[5];
-					nox_swprintf(v13, L"%d", abs(*((short*)v8 + 2)));
-					nox_xxx_drawGetStringSize_43F840(*(int*)&dword_5d4594_1301780, v13, &v12, 0, 0);
-					v7 = v12 / -2 + v5;
-					nox_xxx_drawSetTextColor_434390(nox_color_black_2650656);
-					nox_xxx_drawString_43F6E0(*(int*)&dword_5d4594_1301780, (short*)v13, v7 - 1, v6 - 1);
-					nox_xxx_drawString_43F6E0(*(int*)&dword_5d4594_1301780, (short*)v13, v7 - 1, v6 + 1);
-					nox_xxx_drawString_43F6E0(*(int*)&dword_5d4594_1301780, (short*)v13, v7 + 1, v6 - 1);
-					nox_xxx_drawString_43F6E0(*(int*)&dword_5d4594_1301780, (short*)v13, v7 + 1, v6 + 1);
-					if (*((short*)v8 + 2) <= 0) {
-						nox_xxx_drawSetTextColor_434390(v9);
-					} else {
-						nox_xxx_drawSetTextColor_434390(dword_8531A0_2572);
+					// OpenNox: numbers can be drawn by the client instead, but expired records are still freed below
+					if (!nox_client_damageNumbersHidden) {
+						v5 = *a1 + *(uint32_t*)(a2 + 12) - a1[4];
+						v6 = *(uint32_t*)(a2 + 16) + a1[1] + 2 * (v3 - v10) - *(short*)(a2 + 104) -
+							 (unsigned long long)(long long)*(float*)(a2 + 100) - a1[5];
+						nox_swprintf(v13, L"%d", abs(*((short*)v8 + 2)));
+						nox_xxx_drawGetStringSize_43F840(*(int*)&dword_5d4594_1301780, v13, &v12, 0, 0);
+						v7 = v12 / -2 + v5;
+						nox_xxx_drawSetTextColor_434390(nox_color_black_2650656);
+						nox_xxx_drawString_43F6E0(*(int*)&dword_5d4594_1301780, (short*)v13, v7 - 1, v6 - 1);
+						nox_xxx_drawString_43F6E0(*(int*)&dword_5d4594_1301780, (short*)v13, v7 - 1, v6 + 1);
+						nox_xxx_drawString_43F6E0(*(int*)&dword_5d4594_1301780, (short*)v13, v7 + 1, v6 - 1);
+						nox_xxx_drawString_43F6E0(*(int*)&dword_5d4594_1301780, (short*)v13, v7 + 1, v6 + 1);
+						if (*((short*)v8 + 2) <= 0) {
+							nox_xxx_drawSetTextColor_434390(v9);
+						} else {
+							nox_xxx_drawSetTextColor_434390(dword_8531A0_2572);
+						}
+						nox_xxx_drawString_43F6E0(*(int*)&dword_5d4594_1301780, (short*)v13, v7, v6);
 					}
-					nox_xxx_drawString_43F6E0(*(int*)&dword_5d4594_1301780, (short*)v13, v7, v6);
 					v4 = v11;
 				}
 			} else {

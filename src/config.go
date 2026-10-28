@@ -1,12 +1,14 @@
 package opennox
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"runtime"
 
 	"github.com/spf13/viper"
 
+	"github.com/opennox/libs/console"
 	"github.com/opennox/libs/env"
 	"github.com/opennox/libs/log"
 )
@@ -100,6 +102,38 @@ func configBoolPtr(key, env string, def bool, ptr *bool) {
 	*ptr = viper.GetBool(key)
 	registerOnConfigRead(func() {
 		*ptr = viper.GetBool(key)
+	})
+}
+
+// configToggle binds a bool config value and registers a console command to switch it on and off.
+func configToggle(key, token, help string, def bool, ptr *bool) {
+	configBoolPtr(key, "", def, ptr)
+	noxConsole.Register(&console.Command{
+		Token: token,
+		Help:  token + " [on|off]: " + help,
+		Flags: console.ClientServer,
+		Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
+			if len(tokens) > 1 {
+				return false
+			} else if len(tokens) == 1 {
+				switch tokens[0] {
+				case "on", "1":
+					*ptr = true
+				case "off", "0":
+					*ptr = false
+				default:
+					return false
+				}
+				viper.Set(key, *ptr)
+				writeConfigLater()
+			}
+			state := "off"
+			if *ptr {
+				state = "on"
+			}
+			c.Printf(console.ColorLightYellow, "%s = %s", token, state)
+			return true
+		},
 	})
 }
 

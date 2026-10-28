@@ -8,21 +8,70 @@ import (
 	"image/color"
 	"math"
 	"sort"
+	"strconv"
 
 	noxcolor "github.com/opennox/libs/color"
 	"github.com/opennox/libs/common"
 	"github.com/opennox/libs/console"
+	"github.com/opennox/libs/noxfont"
 	"github.com/opennox/libs/object"
 	"github.com/opennox/libs/wall"
 	"github.com/spf13/viper"
 
 	"github.com/opennox/opennox/v1/client"
+	"github.com/opennox/opennox/v1/client/gui"
 	"github.com/opennox/opennox/v1/client/noxrender"
 	noxflags "github.com/opennox/opennox/v1/common/flags"
 	"github.com/opennox/opennox/v1/common/memmap"
 	"github.com/opennox/opennox/v1/legacy"
 	"github.com/opennox/opennox/v1/server"
 )
+
+const (
+	configHUDNumbers = "game.extensions.hud_numbers"
+)
+
+var hudNumbersEnabled = true
+
+func init() {
+	configToggle(configHUDNumbers, "hudnumbers", "show health and mana numbers on the bars", true, &hudNumbersEnabled)
+}
+
+// drawHealthManaNumbers draws the current and the max value inside the health and mana tubes.
+func (c *Client) drawHealthManaNumbers() {
+	if !hudNumbersEnabled || gameGetPlayState() != 3 || !nox_client_renderGUI_80828 {
+		return
+	}
+	r := c.r
+	fnt := r.Fonts.FontByName(noxfont.SmallName)
+	fh := r.FontHeight(fnt)
+	for i := 0; i < 2; i++ {
+		win, cur, maxv := legacy.HealthManaBar(i)
+		if win == nil || maxv <= 0 || !windowVisible(win) {
+			continue
+		}
+		pos, sz := win.GlobalPos(), win.Size()
+		y := pos.Y + (sz.Y-2*fh)/2
+		for _, s := range [2]string{strconv.Itoa(cur), strconv.Itoa(maxv)} {
+			x := pos.X + (sz.X-r.GetStringSizeWrapped(fnt, s, 0).X)/2
+			r.Data().SetTextColor(nox_color_black_2650656)
+			r.DrawStringWrapped(fnt, s, image.Rect(x+1, y+1, x+1, y+1))
+			r.Data().SetTextColor(nox_color_white_2523948)
+			r.DrawStringWrapped(fnt, s, image.Rect(x, y, x, y))
+			y += fh
+		}
+	}
+}
+
+// windowVisible checks that the window and all its parents are shown.
+func windowVisible(win *gui.Window) bool {
+	for ; win != nil; win = win.Parent() {
+		if win.GetFlags().IsHidden() {
+			return false
+		}
+	}
+	return true
+}
 
 const (
 	configItemOutline = "game.extensions.item_outline"
@@ -262,6 +311,7 @@ func (c *Client) drawGUIOverlays() {
 }
 
 func (c *Client) nox_xxx_clientDrawAll_436100_draw_world(v0 uint64) {
+	noxDamageNumbers.beginFrame()
 	*memmap.PtrUint64(0x5D4594, 814532) = v0
 	*memmap.PtrUint32(0x5D4594, 811916) = c.srv.Frame()
 	vp := c.Viewport()
@@ -651,6 +701,7 @@ LOOP:
 		}
 		if dr.Class()&0x20006 != 0 {
 			legacy.Sub_49A6A0(vp, dr)
+			noxDamageNumbers.addUnit(dr)
 		}
 	}
 	c.DrawableQueue = c.DrawableQueue[:0]

@@ -224,6 +224,9 @@ func (player *MoviePlayer) Play() {
 				close(framesChan)
 				return
 			case newFrame, ok := <-player.queue:
+				// Unqueueing buffers changes the source offset, so finished samples must be updated under the same lock.
+				// Otherwise, the main thread may see the offset without the finished samples and wait too long for the next frame.
+				samplesMu.Lock()
 				if processed := alSrc.BuffersProcessed(); processed > 0 {
 					processedBuffers := make(openal.Buffers, processed)
 					alSrc.UnqueueBuffers(processedBuffers)
@@ -236,11 +239,10 @@ func (player *MoviePlayer) Play() {
 						samples := b.GetSize() / ((bits / 8) * chans)
 						finished += int(samples)
 					}
-					samplesMu.Lock()
 					finishedSamples += finished
-					samplesMu.Unlock()
 					freeBuffers = append(freeBuffers, processedBuffers...)
 				}
+				samplesMu.Unlock()
 
 				if !ok {
 					// If we end up here, means the whole file is already decoded

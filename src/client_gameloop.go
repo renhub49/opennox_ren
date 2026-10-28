@@ -150,8 +150,10 @@ func (c *Client) mainloopDrawAndPresent() {
 	sub_437180()
 	c.drawGUI(func() {
 		c.drawGUIOverlays()
+		noxDamageNumbers.draw(c)
 		if legacy.Get_nox_client_gui_flag_1556112() == 0 {
 			c.GUI.Draw() // Draw game windows
+			c.drawHealthManaNumbers()
 		}
 	})
 	withWorldScreen(c.DrawSparks)

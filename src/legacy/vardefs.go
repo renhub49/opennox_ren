@@ -191,6 +191,7 @@ extern uint32_t dword_5d4594_528252;
 extern uint32_t dword_5d4594_1309828;
 extern void* dword_587000_122852;
 extern uint32_t dword_5d4594_1301776;
+extern int nox_client_damageNumbersHidden;
 extern uint32_t nox_xxx_screenWidth_587000_184452;
 extern uint32_t dword_5d4594_1550916;
 extern uint32_t dword_5d4594_2487540;
@@ -1452,3 +1453,31 @@ func Get_dword_5d4594_1049536() int  { return int(int32(C.dword_5d4594_1049536))
 func Set_dword_5d4594_1049536(v int) { C.dword_5d4594_1049536 = C.uint32_t(v) }
 func Get_dword_5d4594_1320988() int  { return int(int32(C.dword_5d4594_1320988)) }
 func Set_dword_5d4594_1320988(v int) { C.dword_5d4594_1320988 = C.uint32_t(v) }
+
+// Get_dword_5d4594_1098576 returns the shop window.
+func Get_dword_5d4594_1098576() *gui.Window {
+	return AsWindowP(unsafe.Pointer(uintptr(C.dword_5d4594_1098576)))
+}
+
+// SetDamageNumbersHidden disables damage numbers drawn by sub_49A6A0.
+func SetDamageNumbersHidden(v bool) {
+	C.nox_client_damageNumbersHidden = C.int(bool2int(v))
+}
+
+// HealthChange is a recent change of unit health, shown as a floating number (see nox_xxx_cliAddHealthChange_49A650).
+type HealthChange struct {
+	NetCode uint32
+	Value   int  // negative for damage
+	Seq     uint // input sequence when the change happened
+}
+
+// HealthChanges returns recent health changes of units.
+func HealthChanges() []HealthChange {
+	var out []HealthChange
+	for p := uintptr(C.dword_5d4594_1301776); p != 0; {
+		r := (*[5]uint32)(unsafe.Pointer(p))
+		out = append(out, HealthChange{NetCode: r[0], Value: int(int16(r[1])), Seq: uint(r[2])})
+		p = uintptr(r[3])
+	}
+	return out
+}

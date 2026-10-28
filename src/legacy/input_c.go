@@ -17,6 +17,7 @@ package legacy
 #include "client__gui__guiinv.h"
 extern uint32_t array_5D4594_1049872[9];
 extern nox_inventory_cell_t nox_client_inventory_grid_1050020[NOX_INVENTORY_CELLS_MAX];
+extern nox_window_yyy nox_windows_arr_1093036[7];
 #include "client__gui__gamewin__gamewin.h"
 
 void sub_45D870();
@@ -222,6 +223,12 @@ func ItemInfoLines(dr *client.Drawable) []string {
 		out = append(out, GoWString(C.nox_xxx_itemInfoLine(C.int(i))))
 	}
 	return out
+}
+
+// HealthManaBar returns the tube window, the current and the max value of the health (0) or mana (1) bar.
+func HealthManaBar(i int) (*gui.Window, int, int) {
+	b := &C.nox_windows_arr_1093036[i]
+	return asWindow(b.win), int(b.field_1), int(b.field_2)
 }
 
 // IsInventoryItem checks if the item is in the player's inventory, not counting inventory tools (gold, identify, map).

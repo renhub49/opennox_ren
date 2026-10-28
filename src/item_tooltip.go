@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/opennox/opennox/v1/client"
+	"github.com/opennox/opennox/v1/common/memmap"
 	"github.com/opennox/opennox/v1/legacy"
 )
 
@@ -74,10 +75,30 @@ func (c *Client) tooltipItem() *client.Drawable {
 		return nil
 	}
 	dr := legacy.TooltipItem()
-	if !legacy.IsInventoryItem(dr) {
+	if !legacy.IsInventoryItem(dr) && !isShopItem(dr) {
 		return nil
 	}
 	return dr
+}
+
+const (
+	shopItemsOff  = 1098636 // first shop slot, see sub_478E50
+	shopItemSize  = 140
+	shopItemsSize = 6 * 10
+)
+
+// isShopItem checks if the item is offered by the shop.
+func isShopItem(dr *client.Drawable) bool {
+	if dr == nil {
+		return false
+	}
+	for i := 0; i < shopItemsSize; i++ {
+		off := uintptr(shopItemsOff + shopItemSize*i)
+		if memmap.Uint32(0x5D4594, off+4) != 0 && *memmap.PtrPtr(0x5D4594, off) == dr.C() {
+			return true
+		}
+	}
+	return false
 }
 
 // itemSlotGroup returns a group of items that are equipped into the same slot.

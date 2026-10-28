@@ -151,6 +151,16 @@ func applyGUIScaleLive() {
 	if win := legacy.Get_nox_wnd_quitMenu_825760(); win != nil {
 		setQuitMenuPos(win)
 	}
+	// the shop stores the screen rect of its item list when it's created (see sub_478110)
+	if shop := legacy.Get_dword_5d4594_1098576(); shop != nil {
+		if list := shop.ChildByID(3806); list != nil {
+			pos, sz := list.GlobalPos(), list.Size()
+			*memmap.PtrInt32(0x5D4594, 1098380) = int32(pos.X)
+			*memmap.PtrInt32(0x5D4594, 1098384) = int32(pos.Y)
+			*memmap.PtrInt32(0x5D4594, 1098388) = int32(pos.X + sz.X)
+			*memmap.PtrInt32(0x5D4594, 1098392) = int32(pos.Y + sz.Y)
+		}
+	}
 }
 
 // guiScreenRects are offsets of screen bounds, stored by GUI elements when they are created.

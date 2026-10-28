@@ -58,6 +58,26 @@ func (opt *videoScaleOpt) label() string {
 	return fmt.Sprintf("%s %.2f", opt.Text, *opt.Ptr)
 }
 
+// advAutosaveID is a checkbox that cycles through autosave intervals.
+const advAutosaveID = 2064
+
+func autosaveLabel() string {
+	if autosaveMinutes <= 0 {
+		return "Autosave: Off"
+	}
+	return fmt.Sprintf("Autosave: %d min", autosaveMinutes)
+}
+
+// nextAutosaveMinutes returns the next autosave interval in the list of choices.
+func nextAutosaveMinutes() int {
+	for i, v := range autosaveChoices {
+		if v == autosaveMinutes {
+			return autosaveChoices[(i+1)%len(autosaveChoices)]
+		}
+	}
+	return autosaveChoices[0]
+}
+
 type guiAdvOptions struct {
 	cli                          *Client
 	nox_win_advVideoOpts_1522600 *gui.Window
@@ -151,6 +171,14 @@ func (c *guiAdvOptions) nox_client_advVideoOptsLoad() {
 		}
 		c.updateScaleText(opt)
 	}
+	c.updateAutosave()
+}
+
+func (c *guiAdvOptions) updateAutosave() {
+	if w := c.nox_win_advVideoOpts_1522600.ChildByID(advAutosaveID); w != nil {
+		w.DrawData().SetText(autosaveLabel())
+		w.DrawData().Field0Set(0x4, autosaveMinutes > 0)
+	}
 }
 
 func (c *guiAdvOptions) nox_client_advVideoOptsProc_4CB5D0(win *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
@@ -168,6 +196,10 @@ func (c *guiAdvOptions) nox_client_advVideoOptsProc_4CB5D0(win *gui.Window, ev g
 		clientPlaySoundSpecial(sound.SoundButtonPress, 100)
 		id := ev.Win.ID()
 		switch id {
+		case advAutosaveID:
+			setAutosaveMinutes(nextAutosaveMinutes())
+			c.updateAutosave()
+			return nil
 		case 2010:
 			// always enabled
 			legacyUnlockSurface = true
@@ -236,7 +268,7 @@ func (c *guiAdvOptions) newAdvVideoOpts() *gui.Window {
 	const (
 		pad     = 3
 		cheight = 15
-		crow    = 18
+		crow    = 17
 	)
 
 	n := 0
@@ -261,16 +293,25 @@ func (c *guiAdvOptions) newAdvVideoOpts() *gui.Window {
 		text := c.cli.GUI.NewStaticText(root, opt.TextID, pad, y, scaleTextWidth, cheight, false, false, opt.label())
 		slider := NewHorizontalSlider(root, opt.SliderID, pad+scaleTextWidth, y, width-scaleTextWidth-2*pad, cheight, 0, videoScaleSliderMax)
 		if opt.Tooltip != "" {
-			// tooltips are only looked up in enabled windows, and the slider knob is a separate window
-			text.Flags |= gui.StatusEnabled
-			text.DrawData().SetHighlightColor(color.Transparent)
-			text.DrawData().SetTooltip(c.cli.Strings(), opt.Tooltip)
-			slider.DrawData().SetTooltip(c.cli.Strings(), opt.Tooltip)
-			if knob := slider.Field100(); knob != nil {
-				knob.DrawData().SetTooltip(c.cli.Strings(), opt.Tooltip)
-			}
+			setRowTooltip(c.cli.Strings(), text, slider, opt.Tooltip)
 		}
 		n++
 	}
+
+	// autosave interval, each click selects the next one
+	autosave := NewCheckBox(c.cli.GUI, root, advAutosaveID, pad, pad+crow*n, width, cheight, autosaveLabel())
+	autosave.DrawData().SetTooltip(c.cli.Strings(), "Autosave the solo game every few minutes, click to change")
 	return root
+}
+
+// setRowTooltip sets a tooltip for the label and the slider of an options row.
+func setRowTooltip(sm *strman.StringManager, text, slider *gui.Window, tooltip string) {
+	// tooltips are only looked up in enabled windows, and the slider knob is a separate window
+	text.Flags |= gui.StatusEnabled
+	text.DrawData().SetHighlightColor(color.Transparent)
+	text.DrawData().SetTooltip(sm, tooltip)
+	slider.DrawData().SetTooltip(sm, tooltip)
+	if knob := slider.Field100(); knob != nil {
+		knob.DrawData().SetTooltip(sm, tooltip)
+	}
 }
