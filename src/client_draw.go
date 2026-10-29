@@ -31,13 +31,28 @@ const (
 	configHUDNumbers = "game.extensions.hud_numbers"
 )
 
-var hudNumbersEnabled = true
+var (
+	hudNumbersEnabled = true
+
+	hudNumbersMaxColor = noxcolor.RGB5551Color(170, 170, 170)
+)
 
 func init() {
 	configToggle(configHUDNumbers, "hudnumbers", "show health and mana numbers on the bars", true, &hudNumbersEnabled)
 }
 
-// drawHealthManaNumbers draws the current and the max value inside the health and mana tubes.
+// hudNumberColor returns a color for the current value, which warns when the value is low.
+func hudNumberColor(cur, maxv int) color.Color {
+	switch {
+	case cur*4 < maxv:
+		return nox_color_red
+	case cur*2 < maxv:
+		return nox_color_yellow_2589772
+	}
+	return nox_color_white_2523948
+}
+
+// drawHealthManaNumbers draws the current and the max value inside the health and mana tubes, separated by a line.
 func (c *Client) drawHealthManaNumbers() {
 	if !hudNumbersEnabled || gameGetPlayState() != 3 || !nox_client_renderGUI_80828 {
 		return
@@ -45,21 +60,30 @@ func (c *Client) drawHealthManaNumbers() {
 	r := c.r
 	fnt := r.Fonts.FontByName(noxfont.SmallName)
 	fh := r.FontHeight(fnt)
+	const sepH = 3 // space for the separator line
+	drawText := func(s string, x, y int, cl color.Color) {
+		r.Data().SetTextColor(nox_color_black_2650656)
+		r.DrawStringWrapped(fnt, s, image.Rect(x+1, y+1, x+1, y+1))
+		r.Data().SetTextColor(cl)
+		r.DrawStringWrapped(fnt, s, image.Rect(x, y, x, y))
+	}
 	for i := 0; i < 2; i++ {
 		win, cur, maxv := legacy.HealthManaBar(i)
 		if win == nil || maxv <= 0 || !windowVisible(win) {
 			continue
 		}
 		pos, sz := win.GlobalPos(), win.Size()
-		y := pos.Y + (sz.Y-2*fh)/2
-		for _, s := range [2]string{strconv.Itoa(cur), strconv.Itoa(maxv)} {
-			x := pos.X + (sz.X-r.GetStringSizeWrapped(fnt, s, 0).X)/2
-			r.Data().SetTextColor(nox_color_black_2650656)
-			r.DrawStringWrapped(fnt, s, image.Rect(x+1, y+1, x+1, y+1))
-			r.Data().SetTextColor(nox_color_white_2523948)
-			r.DrawStringWrapped(fnt, s, image.Rect(x, y, x, y))
-			y += fh
-		}
+		scur, smax := strconv.Itoa(cur), strconv.Itoa(maxv)
+		wcur, wmax := r.GetStringSizeWrapped(fnt, scur, 0).X, r.GetStringSizeWrapped(fnt, smax, 0).X
+		cx := pos.X + sz.X/2
+		y := pos.Y + (sz.Y-2*fh-sepH)/2
+		drawText(scur, cx-wcur/2, y, hudNumberColor(cur, maxv))
+		y += fh
+		lw := max(wcur, wmax)
+		r.DrawLineHorizontal(cx-lw/2+1, y+2, cx+lw/2+1, nox_color_black_2650656)
+		r.DrawLineHorizontal(cx-lw/2, y+1, cx+lw/2, hudNumbersMaxColor)
+		y += sepH
+		drawText(smax, cx-wmax/2, y, hudNumbersMaxColor)
 	}
 }
 

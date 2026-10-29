@@ -147,6 +147,7 @@ func (c *Client) mapDownloadLoop(first bool) (bool, error) {
 
 func (c *Client) mainloopDrawAndPresent() {
 	c.applyPendingGUIScale()
+	c.drawLowHealthVignette()
 	sub_437180()
 	c.drawGUI(func() {
 		c.drawGUIOverlays()
