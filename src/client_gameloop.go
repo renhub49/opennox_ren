@@ -154,7 +154,12 @@ func (c *Client) mainloopDrawAndPresent() {
 		noxDamageNumbers.draw(c)
 		if legacy.Get_nox_client_gui_flag_1556112() == 0 {
 			c.GUI.Draw() // Draw game windows
-			c.drawHealthManaNumbers()
+			// HUD extras are hidden on the chapter briefing screen
+			if legacy.Get_dword_5d4594_831236() == nil {
+				c.drawHealthManaNumbers()
+				c.drawSpellBarCosts()
+				c.drawEffectTimers()
+			}
 		}
 	})
 	withWorldScreen(c.DrawSparks)

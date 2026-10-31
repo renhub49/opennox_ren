@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/opennox/opennox/v1/client"
+	noxflags "github.com/opennox/opennox/v1/common/flags"
 	"github.com/opennox/opennox/v1/common/memmap"
 	"github.com/opennox/opennox/v1/legacy"
 )
@@ -34,6 +35,7 @@ var (
 	itemTooltipTextColor   = nox_color_white_2523948
 	itemTooltipBetterColor = noxcolor.RGB5551Color(120, 230, 120)
 	itemTooltipWorseColor  = noxcolor.RGB5551Color(240, 100, 100)
+	itemTooltipGoldColor   = noxcolor.RGB5551Color(230, 200, 90)
 
 	itemTooltipNumber = regexp.MustCompile(`-?[0-9]+(\.[0-9]+)?`)
 )
@@ -199,7 +201,34 @@ func (c *Client) itemTooltipLines(name string, dr *client.Drawable) []itemToolti
 		}
 		lines = append(lines, line)
 	}
+	if !isShopItem(dr) {
+		if s := c.itemSellLine(dr); s != "" {
+			lines = append(lines, itemTooltipLine{text: s, cl: itemTooltipGoldColor})
+		}
+	}
 	return lines
+}
+
+// itemSellLine returns the price the shop pays for the inventory item, or its full value when not trading.
+// The price is only known when the game is hosted locally.
+func (c *Client) itemSellLine(dr *client.Drawable) string {
+	if !noxflags.HasGame(noxflags.GameHost) {
+		return ""
+	}
+	u := c.srv.Players.HostUnit()
+	if u == nil {
+		return ""
+	}
+	for _, it := range u.Inventory() {
+		if it.NetCode != dr.NetCode32 {
+			continue
+		}
+		if sess := u.UpdateDataPlayer().Trade70; sess != nil {
+			return fmt.Sprintf("Sell price: %d", legacy.ShopSellPrice(sess, it))
+		}
+		return fmt.Sprintf("Value: %d", legacy.ShopSellPrice(nil, it))
+	}
+	return ""
 }
 
 // drawItemTooltip draws a tooltip with item stats, compared with the equipped item.

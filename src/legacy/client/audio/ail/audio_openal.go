@@ -357,10 +357,27 @@ func (h Stream) Close() error {
 	if s == nil {
 		return nil
 	}
-	s.d.mu.Lock()
+	d := s.d
+	d.mu.Lock()
 	s.playing = false
 	s.dec.Close()
-	s.d.mu.Unlock()
+	// free the OpenAL source and buffers, otherwise each music track leaks a source
+	// and new streams fail to open once the source limit is reached
+	for p := &d.streamHead; *p != nil; p = &(*p).next {
+		if *p == s {
+			*p = s.next
+			break
+		}
+	}
+	s.source.Stop()
+	s.source.Delete()
+	s.hwbuf.Delete()
+	audioCheckError()
+	d.mu.Unlock()
+
+	audioStreams.Lock()
+	delete(audioStreams.byHandle, s.h)
+	audioStreams.Unlock()
 	return nil
 }
 

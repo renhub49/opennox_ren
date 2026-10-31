@@ -139,6 +139,11 @@ func backupSaveDir(name string) {
 		}
 		dst = filepath.Join(root, base+"_"+strconv.Itoa(i))
 	}
+	// CopyDir only creates the subdirectories, not dst itself
+	if err := ifs.MkdirAll(dst); err != nil {
+		saveLog.Println("cannot create save backup dir:", err)
+		return
+	}
 	if err := ifs.CopyDir(src, dst); err != nil {
 		saveLog.Println("cannot backup save:", err)
 		return

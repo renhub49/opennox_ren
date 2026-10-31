@@ -19,9 +19,12 @@ extern uint32_t array_5D4594_1049872[9];
 extern nox_inventory_cell_t nox_client_inventory_grid_1050020[NOX_INVENTORY_CELLS_MAX];
 extern nox_window_yyy nox_windows_arr_1093036[7];
 #include "client__gui__gamewin__gamewin.h"
+#include "GAME4_1.h"
 
 void sub_45D870();
 static bool iswalpha_go(wchar2_t r) { return iswalpha(r); }
+// the item pointer is passed as a float, same as in the callers of nox_xxx_shopGetItemCost_50E3D0
+static int nox_shop_item_cost_go(int mode, void* sess, void* item) { return nox_xxx_shopGetItemCost_50E3D0(mode, (int)sess, *(float*)&item); }
 */
 import "C"
 import (
@@ -32,6 +35,7 @@ import (
 
 	"github.com/opennox/opennox/v1/client"
 	"github.com/opennox/opennox/v1/client/gui"
+	"github.com/opennox/opennox/v1/server"
 )
 
 var (
@@ -253,6 +257,12 @@ func IsInventoryItem(dr *client.Drawable) bool {
 		}
 	}
 	return false
+}
+
+// ShopSellPrice returns the gold the shop in the trade session pays for the item.
+// Without a session it returns the full item value.
+func ShopSellPrice(sess *server.TradeSession, item *server.Object) int {
+	return int(C.nox_shop_item_cost_go(0, unsafe.Pointer(sess), unsafe.Pointer(asObjectC(item))))
 }
 
 // EquippedItems returns all items equipped by the player.

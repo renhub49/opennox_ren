@@ -841,6 +841,12 @@ func Get_dword_587000_122852() unsafe.Pointer {
 func Get_dword_587000_93164() unsafe.Pointer {
 	return C.dword_587000_93164
 }
+func Get_nox_xxx_aClosewoodengat_587000_133480() unsafe.Pointer {
+	return C.nox_xxx_aClosewoodengat_587000_133480
+}
+func Get_dword_5d4594_1062456() *gui.Window {
+	return AsWindowP(unsafe.Pointer(uintptr(C.dword_5d4594_1062456)))
+}
 func Get_nox_client_translucentFrontWalls_805844() int {
 	return int(C.nox_client_translucentFrontWalls_805844)
 }

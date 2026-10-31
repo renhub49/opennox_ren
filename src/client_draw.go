@@ -1445,8 +1445,10 @@ func (c *Client) noxTileDrawTextured(a1 image.Point, a2 int, a3, sz int, dst []u
 	buf := c.tiles.noxTileBuf
 
 	bi := (c.tiles.dword_5d4594_3798804/2)*(int(legacy.Get_dword_5d4594_3798840())+a1.Y-int(legacy.Get_dword_5d4594_3798824())) + (int(legacy.Get_dword_5d4594_3798836()) + a1.X - int(legacy.Get_dword_5d4594_3798820()))
-	if bi >= len(buf) {
-		bi -= len(buf)
+	// the tile buffer wraps around in both directions, the offset can be negative when the view moves fast (e.g. on a lift)
+	bi %= len(buf)
+	if bi < 0 {
+		bi += len(buf)
 	}
 	if noxflags.HasEngine(noxflags.EngineNoSoftLights) {
 		if bi+sz < len(buf) {

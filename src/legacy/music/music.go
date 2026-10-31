@@ -239,7 +239,8 @@ func (m *Module) Init() {
 }
 
 func (m *Module) Update() {
-	current_block := m.blocks[m.block_idx]
+	// must point to the block, startPlay resets its position, so the next loop starts from the beginning
+	current_block := &m.blocks[m.block_idx]
 	if *m.dword_5d4594_816340 == 0 {
 		return
 	}
