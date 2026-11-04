@@ -10,6 +10,9 @@
 #include "common__strman.h"
 #include "operators.h"
 
+// implemented in Go, removes the limit of 9 (or 3) potions and food of the same kind when buying
+int nox_server_unlimitedSameItem();
+
 extern uint32_t dword_5d4594_2386552;
 extern uint32_t dword_5d4594_2386548;
 extern uint32_t dword_5d4594_2386560;
@@ -565,7 +568,7 @@ void sub_5100C0_trade(int a1, uint32_t* a2, int a3) {
 			}
 			if (*(uint8_t*)(v6 + 8) & 0x10) {
 				v9 = nox_xxx_inventoryCountObjects_4E7D30(v3, *(unsigned short*)(v6 + 4));
-				if (v9 >= (nox_common_gameFlags_check_40A5C0(6144) ? 9 : 3)) {
+				if (!nox_server_unlimitedSameItem() && v9 >= (nox_common_gameFlags_check_40A5C0(6144) ? 9 : 3)) {
 					v10 = nox_strman_loadString_40F1D0("pickup.c:MaxSameItem", 0,
 													   "C:\\NoxPost\\src\\Server\\System\\Trade.c", 2943);
 					nox_xxx_netSendLineMessage_4D9EB0(v3, v10);
@@ -668,7 +671,7 @@ float* sub_510640_trade(int a1, int a2, int a3, float* a4) {
 			}
 			if (*(uint8_t*)(v7 + 8) & 0x10) {
 				v9 = nox_xxx_inventoryCountObjects_4E7D30(v4, *(unsigned short*)(v7 + 4));
-				if (v9 >= (nox_common_gameFlags_check_40A5C0(6144) ? 9 : 3)) {
+				if (!nox_server_unlimitedSameItem() && v9 >= (nox_common_gameFlags_check_40A5C0(6144) ? 9 : 3)) {
 					v14 = nox_strman_loadString_40F1D0("pickup.c:MaxSameItem", 0,
 													   "C:\\NoxPost\\src\\Server\\System\\Trade.c", 3108);
 					return (float*)nox_xxx_netSendLineMessage_4D9EB0(v4, v14);

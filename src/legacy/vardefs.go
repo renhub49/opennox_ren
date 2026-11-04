@@ -1460,6 +1460,26 @@ func Set_dword_5d4594_1049536(v int) { C.dword_5d4594_1049536 = C.uint32_t(v) }
 func Get_dword_5d4594_1320988() int  { return int(int32(C.dword_5d4594_1320988)) }
 func Set_dword_5d4594_1320988(v int) { C.dword_5d4594_1320988 = C.uint32_t(v) }
 
+// Get_dword_5d4594_1062512 returns the inventory scroll offset.
+func Get_dword_5d4594_1062512() int {
+	return int(int32(C.dword_5d4594_1062512))
+}
+
+// Get_dword_5d4594_1098628 returns the shop mode, 2 is buying.
+func Get_dword_5d4594_1098628() int {
+	return int(C.dword_5d4594_1098628)
+}
+
+// Get_dword_5d4594_1107036 returns the shop scroll offset.
+func Get_dword_5d4594_1107036() int {
+	return int(int32(C.dword_5d4594_1107036))
+}
+
+// Get_dword_5d4594_1319268 checks if the item amount dialog is shown.
+func Get_dword_5d4594_1319268() bool {
+	return C.dword_5d4594_1319268 == 1
+}
+
 // Get_dword_5d4594_1098576 returns the shop window.
 func Get_dword_5d4594_1098576() *gui.Window {
 	return AsWindowP(unsafe.Pointer(uintptr(C.dword_5d4594_1098576)))

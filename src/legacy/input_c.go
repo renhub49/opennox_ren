@@ -259,6 +259,44 @@ func IsInventoryItem(dr *client.Drawable) bool {
 	return false
 }
 
+var (
+	// QuickSell checks if Shift+click should sell an item for the price right away, see sub_4795E0.
+	QuickSell func(price int) bool
+	// QuickRepair checks if Shift+click should repair an item for the cost right away, see sub_479740.
+	QuickRepair func(cost int) bool
+)
+
+//export nox_client_quickSell
+func nox_client_quickSell(price C.int) C.int {
+	if QuickSell != nil && QuickSell(int(price)) {
+		return 1
+	}
+	return 0
+}
+
+//export nox_client_quickRepair
+func nox_client_quickRepair(cost C.int) C.int {
+	if QuickRepair != nil && QuickRepair(int(cost)) {
+		return 1
+	}
+	return 0
+}
+
+const (
+	// InventoryRows is the number of item rows in the inventory, without the tools row.
+	InventoryRows = C.NOX_INVENTORY_ROW_COUNT - 1
+	InventoryCols = C.NOX_INVENTORY_COL_COUNT
+)
+
+// InventoryCell returns the item stack in the inventory cell and the number of items in it.
+func InventoryCell(row, col int) (*client.Drawable, int) {
+	cell := &C.nox_client_inventory_grid_1050020[row+C.NOX_INVENTORY_ROW_COUNT*col]
+	if cell.field_140 == 0 {
+		return nil, 0
+	}
+	return AsDrawableP(unsafe.Pointer(cell.field_0)), int(cell.field_140)
+}
+
 // ShopSellPrice returns the gold the shop in the trade session pays for the item.
 // Without a session it returns the full item value.
 func ShopSellPrice(sess *server.TradeSession, item *server.Object) int {

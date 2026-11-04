@@ -13,6 +13,10 @@
 #include "input_common.h"
 #include "operators.h"
 
+// implemented in Go, check if Shift+click should sell or repair an item without the amount dialog
+int nox_client_quickSell(int price);
+int nox_client_quickRepair(int cost);
+
 extern uint32_t dword_5d4594_1098456;
 extern uint32_t dword_5d4594_1098620;
 extern uint32_t dword_5d4594_1098596;
@@ -228,6 +232,9 @@ int sub_4795E0(int a1, int a2) {
 		result = sub_4676D0(a1);
 		v5 = result;
 		if (result) {
+			if (nox_client_quickSell(a2)) {
+				return nox_client_tradeXxxSellAccept_4796D0(a1);
+			}
 			if (*(uint32_t*)(result + 112) & 0x13001000) {
 				v2 = (const void*)(result + 432);
 			}
@@ -268,6 +275,8 @@ void sub_479740(int a1, unsigned int a2) {
 			if (a2 > v10) {
 				sub_479520(a2 - v10);
 				sub_467680();
+			} else if (nox_client_quickRepair(a2)) {
+				sub_479840(a1);
 			} else {
 				v9 = *(uint32_t*)(v5 + 108);
 				v8 = mpos.y;

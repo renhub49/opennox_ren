@@ -84,6 +84,41 @@ func (c *Client) tooltipItem() *client.Drawable {
 }
 
 const (
+	configQuickSell   = "game.extensions.quick_sell"
+	configQuickRepair = "game.extensions.quick_repair"
+)
+
+var (
+	// quickSellEnabled allows selling items with Shift+click, without the amount dialog.
+	quickSellEnabled = true
+	// quickRepairEnabled allows repairing items with Shift+click, without the amount dialog.
+	quickRepairEnabled = true
+)
+
+func init() {
+	configToggle(configQuickSell, "quicksell", "sell an item with Shift+click, without the amount dialog", true, &quickSellEnabled)
+	configToggle(configQuickRepair, "quickrepair", "repair an item with Shift+click, without the amount dialog", true, &quickRepairEnabled)
+}
+
+// quickSell checks if the item should be sold right away and prints the gold received.
+func quickSell(price int) bool {
+	if !quickSellEnabled || !noxClient.Inp.KeyModShift() {
+		return false
+	}
+	nox_xxx_printCentered_445490(fmt.Sprintf("Sold for %d gold.", price))
+	return true
+}
+
+// quickRepair checks if the item should be repaired right away and prints the gold paid.
+func quickRepair(cost int) bool {
+	if !quickRepairEnabled || !noxClient.Inp.KeyModShift() {
+		return false
+	}
+	nox_xxx_printCentered_445490(fmt.Sprintf("Repaired for %d gold.", cost))
+	return true
+}
+
+const (
 	shopItemsOff  = 1098636 // first shop slot, see sub_478E50
 	shopItemSize  = 140
 	shopItemsSize = 6 * 10
@@ -200,6 +235,13 @@ func (c *Client) itemTooltipLines(name string, dr *client.Drawable) []itemToolti
 			}
 		}
 		lines = append(lines, line)
+	}
+	if s, usable, ok := itemClassLine(dr); ok {
+		var cl color.Color = itemTooltipTextColor
+		if !usable {
+			cl = itemTooltipWorseColor
+		}
+		lines = append(lines, itemTooltipLine{text: s, cl: cl})
 	}
 	if !isShopItem(dr) {
 		if s := c.itemSellLine(dr); s != "" {

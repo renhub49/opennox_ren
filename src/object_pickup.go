@@ -11,6 +11,15 @@ import (
 	"github.com/opennox/opennox/v1/server"
 )
 
+const configUnlimitedPotions = "game.extensions.unlimited_potions"
+
+// unlimitedPotions removes the limit of potions and food of the same kind, they stack by 32 in the inventory instead.
+var unlimitedPotions = true
+
+func init() {
+	configToggle(configUnlimitedPotions, "unlimitedpotions", "allow carrying any number of potions and food of the same kind", true, &unlimitedPotions)
+}
+
 var (
 	cheatAllowAll = false
 )
@@ -77,7 +86,7 @@ func nox_xxx_pickupDefault_4F31E0(obj, item *server.Object, a3, a4 int) bool {
 		s.Log.Info("can't pickup; carrying too much", "obj", obj.String(), "item", item.String())
 		return false
 	}
-	if item.Class().Has(object.ClassFood) {
+	if item.Class().Has(object.ClassFood) && !unlimitedPotions {
 		cnt := obj.CountInventoryWithType(int(item.TypeInd))
 		maxCnt := 3
 		if noxflags.HasGame(noxflags.GameModeQuest | noxflags.GameModeCoop) {

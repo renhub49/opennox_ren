@@ -21,7 +21,16 @@ var (
 	Nox_xxx_pickupPotion_4F37D0          server.PickupFunc
 	Nox_xxx_playerClassCanUseItem_57B3D0 func(item *server.Object, cl player.Class) bool
 	Sub_57B370                           func(cl object.Class, sub object.SubClass, typ int) byte
+	UnlimitedSameItem                    func() bool
 )
+
+//export nox_server_unlimitedSameItem
+func nox_server_unlimitedSameItem() C.int {
+	if UnlimitedSameItem != nil && UnlimitedSameItem() {
+		return 1
+	}
+	return 0
+}
 
 func init() {
 	server.RegisterObjectPickup("DefaultPickup", C.nox_xxx_pickupDefault_4F31E0, func(who, it *server.Object, a3, a4 int) bool {
