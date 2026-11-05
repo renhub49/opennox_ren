@@ -560,6 +560,9 @@ func nox_savegame_sub_46CE40(wlist, wnames, wstyles *gui.Window, sarr []server.S
 				v17 = strMan.GetStringInFile("GuiInv.c:IdentifyUnknown", stringsFile)
 			}
 			v42 += v17
+			if isAutosaveSlot(spath) {
+				v42 += " (Autosave)"
+			}
 		}
 		v21 := sub46CD70(sv)
 		stime := sv.Timestamp.Time().Format("06-01-02, 15:04 ")

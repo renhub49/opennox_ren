@@ -3,6 +3,7 @@ package opennox
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -94,7 +95,58 @@ func setAutosaveMinutes(v int) {
 	writeConfigLater()
 }
 
-// autosaveTick saves the solo game to the autosave slot every few minutes, same as the "Save to AutoSave" button.
+const (
+	// the timed autosaves rotate through these slots, from the oldest to the newest
+	autosaveFirstSlot = 11
+	autosaveSlots     = 3
+	// marks a slot written by the timed autosave, so player saves in these slots are never touched
+	autosaveMarker = "autosave.txt"
+)
+
+// autosaveSlotPending is the slot of the timed autosave being written, it's marked when the save completes.
+var autosaveSlotPending string
+
+func autosaveSlotName(i int) string {
+	return fmt.Sprintf(common.SaveFormat, autosaveFirstSlot+i)
+}
+
+// isAutosaveSlot checks if the save (a dir or a file in it) was written by the timed autosave.
+func isAutosaveSlot(path string) bool {
+	if filepath.Ext(path) != "" {
+		path = filepath.Dir(path)
+	}
+	_, err := ifs.Stat(filepath.Join(path, autosaveMarker))
+	return err == nil
+}
+
+// rotateAutosaveSlots drops the oldest timed autosave and moves the others up, returning the free last slot.
+// It fails if any of the slots holds a save made by the player.
+func rotateAutosaveSlots() (string, bool) {
+	for i := 0; i < autosaveSlots; i++ {
+		dir := datapath.Save(autosaveSlotName(i))
+		if _, err := ifs.Stat(filepath.Join(dir, common.PlayerFile)); err == nil && !isAutosaveSlot(dir) {
+			return "", false
+		}
+	}
+	if err := deleteSaveDir(autosaveSlotName(0), true); err != nil {
+		saveLog.Println("cannot remove the oldest autosave:", err)
+		return "", false
+	}
+	for i := 1; i < autosaveSlots; i++ {
+		src := datapath.Save(autosaveSlotName(i))
+		if _, err := ifs.Stat(src); err != nil {
+			continue
+		}
+		if err := ifs.Rename(src, datapath.Save(autosaveSlotName(i-1))); err != nil {
+			saveLog.Println("cannot move autosave:", err)
+			return "", false
+		}
+	}
+	return autosaveSlotName(autosaveSlots - 1), true
+}
+
+// autosaveTick saves the solo game every few minutes, rotating through the autosave slots.
+// If the slots hold player saves, it saves to the "AutoSave" slot instead, same as the "Save to AutoSave" button.
 func (c *Client) autosaveTick() {
 	if autosaveMinutes <= 0 || !noxflags.HasGame(noxflags.GameModeCoop) || gameGetPlayState() != 3 {
 		autosaveLast = time.Time{}
@@ -112,7 +164,14 @@ func (c *Client) autosaveTick() {
 		return // try again later
 	}
 	autosaveLast = now
-	setSaveFileName(common.SaveAuto)
+	name, ok := rotateAutosaveSlots()
+	if ok {
+		autosaveSlotPending = name
+	} else {
+		name = common.SaveAuto
+		nox_xxx_printCentered_445490(fmt.Sprintf("Slots %d-%d hold your saves, autosaving to AutoSave instead.", autosaveFirstSlot, autosaveFirstSlot+autosaveSlots-1))
+	}
+	setSaveFileName(name)
 	sub_4DB170(true, nil, 0) // the game prints its own message when saved
 }
 
@@ -957,6 +1016,15 @@ func saveCoopGame(name string) bool {
 		if err := copySaveDir(common.SaveTmp, name); err != nil {
 			saveLog.Printf("failed to copy save file: %v", err)
 			return false
+		}
+		// any save restarts the autosave timer, so the timed autosave doesn't follow right after another save
+		autosaveLast = time.Now()
+		if autosaveSlotPending != "" && strings.EqualFold(name, autosaveSlotPending) {
+			autosaveSlotPending = ""
+			if f, err := ifs.Create(filepath.Join(datapath.Save(name), autosaveMarker)); err == nil {
+				f.WriteString("Written by the timed autosave, the next autosaves will replace it.\r\n")
+				f.Close()
+			}
 		}
 	}
 	dword_5d4594_1563092 = 0
